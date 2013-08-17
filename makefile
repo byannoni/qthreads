@@ -11,10 +11,10 @@ endif
 all : libqthread
 
 function_queue.o: function_queue.c function_queue.h
-	$(CC) -fpic -c -o $@ $<
+	$(CC) -Wall -Wextra -fpic -c -o $@ $<
 
 threading_queue.o: threading_queue.c threading_queue.h function_queue.h
-	$(CC) -fpic -c -Wl,--no-as-needed -o $@ $<
+	$(CC) -Wall -Wextra -fpic -c -Wl,--no-as-needed -o $@ $<
 
 libqthread: $(OBJS)
 	ar rcs $@.a $^

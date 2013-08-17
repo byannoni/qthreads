@@ -63,15 +63,20 @@ function_queue_destroy( struct function_queue* q )
 	int ret = pthread_mutex_destroy( &q->lock );
 
 	if( !ret )
-		free( q->elements );
+		free((struct function_queue_element*) q->elements );
 
 	return ret;
 }
 
 int
-push( struct function_queue* q, struct function_queue_element e )
+push( struct function_queue* q, struct function_queue_element e, int block )
 {
-	int ret = pthread_mutex_trylock( &q->lock );
+	int ret;
+
+	if( block )
+		ret = pthread_mutex_lock( &q->lock );
+	else
+		ret = pthread_mutex_trylock( &q->lock );
 
 	if( !ret ) {
 		unsigned tmp = q->back++;
@@ -93,9 +98,14 @@ push( struct function_queue* q, struct function_queue_element e )
 }
 
 int
-pop( struct function_queue* q, struct function_queue_element* e )
+pop( struct function_queue* q, struct function_queue_element* e, int block )
 {
-	int ret = pthread_mutex_trylock( &q->lock );
+	int ret;
+
+	if( block )
+		ret = pthread_mutex_lock( &q->lock );
+	else
+		ret = pthread_mutex_trylock( &q->lock );
 
 	if( !ret ) {
 		unsigned tmp = q->front++;
@@ -117,9 +127,14 @@ pop( struct function_queue* q, struct function_queue_element* e )
 }
 
 int
-peek( struct function_queue* q, struct function_queue_element* e )
+peek( struct function_queue* q, struct function_queue_element* e, int block )
 {
-	int ret = pthread_mutex_trylock( &q->lock );
+	int ret;
+
+	if( block )
+		ret = pthread_mutex_lock( &q->lock );
+	else
+		ret = pthread_mutex_trylock( &q->lock );
 
 	if( !ret ) {
 		unsigned tmp = q->front + 1;
@@ -139,9 +154,14 @@ peek( struct function_queue* q, struct function_queue_element* e )
 }
 
 int
-is_empty( struct function_queue* q )
+is_empty( struct function_queue* q, int block )
 {
-	int ret = pthread_mutex_trylock( &q->lock );
+	int ret;
+
+	if( block )
+		ret = pthread_mutex_lock( &q->lock );
+	else
+		ret = pthread_mutex_trylock( &q->lock );
 
 	if( !ret ) {
 		ret = q->front == q->back;
@@ -152,14 +172,19 @@ is_empty( struct function_queue* q )
 }
 
 int
-is_full( struct function_queue* q )
+is_full( struct function_queue* q, int block )
 {
-	int ret = pthread_mutex_trylock( &q->lock );
+	int ret;
+
+	if( block )
+		ret = pthread_mutex_lock( &q->lock );
+	else
+		ret = pthread_mutex_trylock( &q->lock );
 
 	if( !ret ) {
 		unsigned tmp = q->back + 1;
 
-		if( tmp == q->front || tmp == q->max_elements && q->front == 0 )
+		if( tmp == q->front || ( tmp == q->max_elements && q->front == 0 ))
 			ret = 1;
 
 		pthread_mutex_unlock( &q->lock );
@@ -174,13 +199,18 @@ is_full( struct function_queue* q )
  * at the end of the queue.
  */
 int
-resize( struct function_queue* q, unsigned max_elements )
+resize( struct function_queue* q, unsigned max_elements, int block )
 {
-	int ret = pthread_mutex_trylock( &q->lock );
+	int ret;
+
+	if( block )
+		ret = pthread_mutex_lock( &q->lock );
+	else
+		ret = pthread_mutex_trylock( &q->lock );
 
 	if( !ret ) {
 		volatile struct function_queue_element* tmp = q->elements;
-		q->elements = realloc( q->elements, max_elements *
+		q->elements = realloc((struct function_queue_element*) q->elements, max_elements *
 				sizeof( struct function_queue_element ));
 		ret = q->elements != tmp;
 		pthread_mutex_unlock( &q->lock );

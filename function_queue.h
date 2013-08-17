@@ -10,10 +10,10 @@ struct function_queue_element {
 };
 
 struct function_queue {
-	volatile unsigned front;
-	volatile unsigned back;
-	volatile unsigned max_elements;
-	volatile struct function_queue_element* elements;
+	unsigned front;
+	unsigned back;
+	unsigned max_elements;
+	struct function_queue_element* elements;
 	pthread_mutex_t lock;
 };
 
@@ -23,12 +23,12 @@ extern "C" {
 
 int function_queue_init( struct function_queue*, unsigned );
 int function_queue_destroy( struct function_queue* );
-int push( struct function_queue*, struct function_queue_element );
-int pop( struct function_queue*, struct function_queue_element* );
-int peek( struct function_queue*, struct function_queue_element* );
-int is_empty( struct function_queue* );
-int is_full( struct function_queue* );
-int resize( struct function_queue*, unsigned );
+int push( struct function_queue*, struct function_queue_element, int );
+int pop( struct function_queue*, struct function_queue_element*, int );
+int peek( struct function_queue*, struct function_queue_element*, int );
+int is_empty( struct function_queue*, int );
+int is_full( struct function_queue*, int );
+int resize( struct function_queue*, unsigned, int );
 
 #ifdef __cplusplus
 }
