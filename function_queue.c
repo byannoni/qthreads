@@ -13,7 +13,8 @@ static volatile struct {
 	int settype;
 } init_attr_ret;
 
-static void init_attr( void )
+static void
+init_attr( void )
 {
 	init_attr_ret.init = pthread_mutexattr_init( &attr );
 	init_attr_ret.settype = pthread_mutexattr_settype( &attr,
@@ -21,7 +22,8 @@ static void init_attr( void )
 }
 
 
-int function_queue_init( struct function_queue* q, unsigned max_elements )
+int
+function_queue_init( struct function_queue* q, unsigned max_elements )
 {
 	int ret = pthread_once( &init_attr_control, init_attr );
 
@@ -55,7 +57,8 @@ int function_queue_init( struct function_queue* q, unsigned max_elements )
 	return ret;
 }
 
-int function_queue_destroy( struct function_queue* q )
+int
+function_queue_destroy( struct function_queue* q )
 {
 	int ret = pthread_mutex_destroy( &q->lock );
 
@@ -65,7 +68,8 @@ int function_queue_destroy( struct function_queue* q )
 	return ret;
 }
 
-int push( struct function_queue* q, struct function_queue_element e )
+int
+push( struct function_queue* q, struct function_queue_element e )
 {
 	int ret = pthread_mutex_trylock( &q->lock );
 
@@ -88,7 +92,8 @@ int push( struct function_queue* q, struct function_queue_element e )
 	return ret;
 }
 
-int pop( struct function_queue* q, struct function_queue_element* e )
+int
+pop( struct function_queue* q, struct function_queue_element* e )
 {
 	int ret = pthread_mutex_trylock( &q->lock );
 
@@ -111,7 +116,8 @@ int pop( struct function_queue* q, struct function_queue_element* e )
 	return ret;
 }
 
-int peek( struct function_queue* q, struct function_queue_element* e )
+int
+peek( struct function_queue* q, struct function_queue_element* e )
 {
 	int ret = pthread_mutex_trylock( &q->lock );
 
@@ -132,7 +138,8 @@ int peek( struct function_queue* q, struct function_queue_element* e )
 	return ret;
 }
 
-int is_empty( struct function_queue* q )
+int
+is_empty( struct function_queue* q )
 {
 	int ret = pthread_mutex_trylock( &q->lock );
 
@@ -144,7 +151,8 @@ int is_empty( struct function_queue* q )
 	return ret;
 }
 
-int is_full( struct function_queue* q )
+int
+is_full( struct function_queue* q )
 {
 	int ret = pthread_mutex_trylock( &q->lock );
 
@@ -160,12 +168,18 @@ int is_full( struct function_queue* q )
 	return ret;
 }
 
-int resize( struct function_queue* q, unsigned max_elements )
+/*
+ * XXX
+ * Shrinking a queue will free elements that are not necessarily 
+ * at the end of the queue.
+ */
+int
+resize( struct function_queue* q, unsigned max_elements )
 {
 	int ret = pthread_mutex_trylock( &q->lock );
 
 	if( !ret ) {
-		struct function_queue_element* tmp = q->elements;
+		volatile struct function_queue_element* tmp = q->elements;
 		q->elements = realloc( q->elements, max_elements *
 				sizeof( struct function_queue_element ));
 		ret = q->elements != tmp;

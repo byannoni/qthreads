@@ -10,10 +10,10 @@ struct function_queue_element {
 };
 
 struct function_queue {
-	unsigned front;
-	unsigned back;
-	unsigned max_elements;
-	struct function_queue_element* elements;
+	volatile unsigned front;
+	volatile unsigned back;
+	volatile unsigned max_elements;
+	volatile struct function_queue_element* elements;
 	pthread_mutex_t lock;
 };
 
