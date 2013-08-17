@@ -5,7 +5,8 @@
 #include <errno.h>
 #include <pthread.h>
 
-static void* get_and_run( struct threading_queue* tq )
+static void*
+get_and_run( struct threading_queue* tq )
 {
 	struct function_queue_element fqe;
 
@@ -19,14 +20,15 @@ static void* get_and_run( struct threading_queue* tq )
 	return 0;
 }
 
-int threading_queue_init( struct threading_queue* tq, unsigned max_threads,
-				struct function_queue* fq, useconds_t delay )
+int
+threading_queue_init( struct threading_queue* tq,
+		struct threading_queue_startup_info tqsi[static 1] )
 {
 	int ret = 0;
-	tq->fq = fq;
-	tq->max_threads = max_threads;
-	tq->delay = delay;
-	tq->threads = malloc( max_threads * sizeof( pthread_t ));
+	tq->fq = tqsi->fq;
+	tq->max_threads = tqsi->max_threads;
+	tq->delay = tqsi->delay;
+	tq->threads = malloc( tqsi->max_threads * sizeof( pthread_t ));
 
 	if( !tq->threads )
 		ret = ENOMEM;
@@ -34,12 +36,19 @@ int threading_queue_init( struct threading_queue* tq, unsigned max_threads,
 	return ret;
 }
 
-int threading_queue_destroy( struct threading_queue* tq )
+int
+threading_queue_destroy( struct threading_queue* tq )
 {
-	return stop( tq );
+	int ret = stop( tq );
+
+	if( !ret )
+		free( tq->threads );
+
+	return ret;
 }
 
-int start( struct threading_queue* tq )
+int
+start( struct threading_queue* tq )
 {
 	int i = 0;
 	int ret = 0;
@@ -51,7 +60,8 @@ int start( struct threading_queue* tq )
 	return ret;
 }
 
-int stop( struct threading_queue* tq )
+int
+stop( struct threading_queue* tq )
 {
 	int i = 0;
 

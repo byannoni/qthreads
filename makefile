@@ -1,25 +1,26 @@
 
 CC=gcc
+OBJS=threading_queue.o function_queue.o
+
+ifeq ($(OS),Windows_NT)
+	RM=del
+else
+	RM=rm -f
+endif
 
 all : libqthread
 
-libfuncq:
-ifeq ($(OS),Windows_NT)
-	$(CC) -c -o $@.o function_queue.c
-	ar rcs $@.a $@.o
-else
-	$(CC) -shared -fpic -o $@.so function_queue.c
-endif
+function_queue.o: function_queue.c function_queue.h
+	$(CC) -fpic -c -o $@ $<
 
-libqthread: threading_queue.c libfuncq
-ifeq ($(OS),Windows_NT)
-	$(CC) -c -o $@.o threading_queue.c
-	ar rcs $@.a $@.o
-else
-	$(CC) -shared -fpic -o $@.so threading_queue.c
-endif
+threading_queue.o: threading_queue.c threading_queue.h function_queue.h
+	$(CC) -fpic -c -Wl,--no-as-needed -o $@ $<
+
+libqthread: $(OBJS)
+	ar rcs $@.a $^
 
 : all
 
 clean:
-	rm -f libfuncq.a libfuncq.so libqthread.a libqthread.so
+	$(RM) libqthread.a $(OBJS)
+
