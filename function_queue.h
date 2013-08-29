@@ -13,6 +13,7 @@ struct function_queue {
 	unsigned front;
 	unsigned back;
 	unsigned max_elements;
+	unsigned size;
 	struct function_queue_element* elements;
 	pthread_mutex_t lock;
 };
@@ -28,7 +29,6 @@ int pop( struct function_queue*, struct function_queue_element*, int );
 int peek( struct function_queue*, struct function_queue_element*, int );
 int is_empty( struct function_queue*, int );
 int is_full( struct function_queue*, int );
-int resize( struct function_queue*, unsigned, int );
 
 #ifdef __cplusplus
 }

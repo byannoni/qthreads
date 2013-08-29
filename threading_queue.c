@@ -12,7 +12,7 @@ get_and_run( struct threading_queue* tq )
 	struct function_queue_element fqe;
 
 	do {
-		if( pop( tq->fq, &fqe, 1 )) {
+		if( !pop( tq->fq, &fqe, 1 )) {
 			fqe.func( fqe.arg );
 		}
 
@@ -32,8 +32,9 @@ threading_queue_init( struct threading_queue* tq,
 	tq->delay = tqsi->delay;
 	tq->threads = malloc( tqsi->max_threads * sizeof( pthread_t ));
 
-	if( !tq->threads )
+	if( !tq->threads ) {
 		ret = ENOMEM;
+	}
 
 	return ret;
 }
@@ -43,8 +44,9 @@ threading_queue_destroy( struct threading_queue* tq )
 {
 	int ret = stop( tq );
 
-	if( !ret )
+	if( !ret ) {
 		free( tq->threads );
+	}
 
 	return ret;
 }
@@ -70,8 +72,9 @@ stop( struct threading_queue* tq )
 {
 	unsigned i = 0;
 
-	for( i = 0; i < tq->max_threads; ++i )
+	for( i = 0; i < tq->max_threads; ++i ) {
 		pthread_cancel( tq->threads[i] );
+	}
 
 	return 0;
 }
