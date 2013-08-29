@@ -21,7 +21,11 @@ init_attr( void )
 			PTHREAD_MUTEX_RECURSIVE );
 }
 
-
+/*
+ * FIXME
+ * A false overflow is detected when filling the queue; max_elements must be 1
+ * greater than intended.
+ */
 int
 function_queue_init( struct function_queue* q, unsigned max_elements )
 {
@@ -113,7 +117,7 @@ pop( struct function_queue* q, struct function_queue_element* e, int block )
 		if( q->front == q->max_elements )
 			q->front = 0;
 
-		if( q->front == q->back ) { /* underflow */
+		if( q->front > q->back ) { /* underflow */
 			q->front = tmp;
 			ret = ERANGE;
 		} else {
