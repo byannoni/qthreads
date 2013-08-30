@@ -1,4 +1,3 @@
-
 #include <errno.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -21,11 +20,6 @@ init_attr( void )
 			PTHREAD_MUTEX_RECURSIVE );
 }
 
-/*
- * FIXME
- * A false overflow is detected when filling the queue; max_elements must be 1
- * greater than intended.
- */
 int
 function_queue_init( struct function_queue* q, unsigned max_elements )
 {
