@@ -22,13 +22,13 @@ struct function_queue {
 extern "C" {
 #endif
 
-int function_queue_init( struct function_queue*, unsigned );
-int function_queue_destroy( struct function_queue* );
-int push( struct function_queue*, struct function_queue_element, int );
-int pop( struct function_queue*, struct function_queue_element*, int );
-int peek( struct function_queue*, struct function_queue_element*, int );
-int is_empty( struct function_queue*, int );
-int is_full( struct function_queue*, int );
+int fq_init( struct function_queue*, unsigned );
+int fq_destroy( struct function_queue* );
+int fq_push( struct function_queue*, struct function_queue_element, int );
+int fq_pop( struct function_queue*, struct function_queue_element*, int );
+int fq_peek( struct function_queue*, struct function_queue_element*, int );
+int fq_is_empty( struct function_queue*, int );
+int fq_is_full( struct function_queue*, int );
 
 #ifdef __cplusplus
 }

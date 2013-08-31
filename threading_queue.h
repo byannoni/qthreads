@@ -1,5 +1,6 @@
 
 #include "function_queue.h"
+
 #include <unistd.h>
 
 struct threading_queue_startup_info {
@@ -19,11 +20,11 @@ struct threading_queue {
 extern "C" {
 #endif
 
-int threading_queue_init( struct threading_queue*,
-		struct threading_queue_startup_info tqsi[static 1] );
-int threading_queue_destroy( struct threading_queue* );
-int start( struct threading_queue* );
-int stop( struct threading_queue* );
+int tq_init( struct threading_queue*,
+		struct threading_queue_startup_info* tqsi );
+int tq_destroy( struct threading_queue* );
+int tq_start( struct threading_queue* );
+int tq_stop( struct threading_queue* );
 
 #ifdef __cplusplus
 }

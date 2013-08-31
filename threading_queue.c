@@ -12,7 +12,7 @@ get_and_run( struct threading_queue* tq )
 	struct function_queue_element fqe;
 
 	do {
-		if( !pop( tq->fq, &fqe, 1 )) {
+		if( !fq_pop( tq->fq, &fqe, 1 )) {
 			fqe.func( fqe.arg );
 		}
 
@@ -23,7 +23,7 @@ get_and_run( struct threading_queue* tq )
 }
 
 int
-threading_queue_init( struct threading_queue* tq,
+tq_init( struct threading_queue* tq,
 		struct threading_queue_startup_info tqsi[static 1] )
 {
 	int ret = 0;
@@ -40,9 +40,9 @@ threading_queue_init( struct threading_queue* tq,
 }
 
 int
-threading_queue_destroy( struct threading_queue* tq )
+tq_destroy( struct threading_queue* tq )
 {
-	int ret = stop( tq );
+	int ret = tq_stop( tq );
 
 	if( !ret ) {
 		free( tq->threads );
@@ -52,7 +52,7 @@ threading_queue_destroy( struct threading_queue* tq )
 }
 
 int
-start( struct threading_queue* tq )
+tq_start( struct threading_queue* tq )
 {
 	int ret = 0;
 	unsigned i = 0;
@@ -68,7 +68,7 @@ start( struct threading_queue* tq )
 }
 
 int
-stop( struct threading_queue* tq )
+tq_stop( struct threading_queue* tq )
 {
 	unsigned i = 0;
 

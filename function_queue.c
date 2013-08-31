@@ -21,7 +21,7 @@ init_attr( void )
 }
 
 int
-function_queue_init( struct function_queue* q, unsigned max_elements )
+fq_init( struct function_queue* q, unsigned max_elements )
 {
 	int ret = pthread_once( &init_attr_control, init_attr );
 
@@ -58,7 +58,7 @@ function_queue_init( struct function_queue* q, unsigned max_elements )
 }
 
 int
-function_queue_destroy( struct function_queue* q )
+fq_destroy( struct function_queue* q )
 {
 	int ret = pthread_mutex_destroy( &q->lock );
 
@@ -70,7 +70,7 @@ function_queue_destroy( struct function_queue* q )
 }
 
 int
-push( struct function_queue* q, struct function_queue_element e, int block )
+fq_push( struct function_queue* q, struct function_queue_element e, int block )
 {
 	int ret;
 
@@ -81,7 +81,7 @@ push( struct function_queue* q, struct function_queue_element e, int block )
 	}
 
 	if( !ret ) {
-		if( is_full( q, 1 )) { /* overflow */
+		if( fq_is_full( q, 1 )) { /* overflow */
 			ret = ERANGE;
 		} else {
 			++q->size;
@@ -100,7 +100,7 @@ push( struct function_queue* q, struct function_queue_element e, int block )
 }
 
 int
-pop( struct function_queue* q, struct function_queue_element* e, int block )
+fq_pop( struct function_queue* q, struct function_queue_element* e, int block )
 {
 	int ret;
 
@@ -111,7 +111,7 @@ pop( struct function_queue* q, struct function_queue_element* e, int block )
 	}
 
 	if( !ret ) {
-		if( is_empty( q, 1 )) { /* underflow */
+		if( fq_is_empty( q, 1 )) { /* underflow */
 			ret = ERANGE;
 		} else {
 			--q->size;
@@ -121,7 +121,6 @@ pop( struct function_queue* q, struct function_queue_element* e, int block )
 			}
 
 			*e = q->elements[q->front];
-			memset( &q->elements[q->front], 0, sizeof( struct function_queue_element ));
 		}
 
 		pthread_mutex_unlock( &q->lock );
@@ -131,7 +130,7 @@ pop( struct function_queue* q, struct function_queue_element* e, int block )
 }
 
 int
-peek( struct function_queue* q, struct function_queue_element* e, int block )
+fq_peek( struct function_queue* q, struct function_queue_element* e, int block )
 {
 	int ret;
 
@@ -142,7 +141,7 @@ peek( struct function_queue* q, struct function_queue_element* e, int block )
 	}
 
 	if( !ret ) {
-		if( is_empty( q, 1 )) {
+		if( fq_is_empty( q, 1 )) {
 			ret = ERANGE;
 		} else {
 			unsigned tmp = q->front + 1;
@@ -161,7 +160,7 @@ peek( struct function_queue* q, struct function_queue_element* e, int block )
 }
 
 int
-is_empty( struct function_queue* q, int block )
+fq_is_empty( struct function_queue* q, int block )
 {
 	int ret;
 
@@ -180,7 +179,7 @@ is_empty( struct function_queue* q, int block )
 }
 
 int
-is_full( struct function_queue* q, int block )
+fq_is_full( struct function_queue* q, int block )
 {
 	int ret;
 
