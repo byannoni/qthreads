@@ -1,4 +1,5 @@
 qthreads
 ========
 
-An idea I had while writing Perl. Based on pthreads, written in C.
+A POSIX thread wrapper using queues of functions for C and C++.
+
