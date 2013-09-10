@@ -4,6 +4,10 @@
 
 #include <pthread.h>
 
+#ifdef __cplusplus
+#include <stdexcept>
+#endif
+
 struct function_queue_element {
 	void (* func)(void*);
 	void* arg;
@@ -16,6 +20,11 @@ struct function_queue {
 	unsigned size;
 	struct function_queue_element* elements;
 	pthread_mutex_t lock;
+};
+
+enum {
+	EMUTEXATTR_INIT = ~-2,
+	EMUTEXATTR_SETTYPE = ~-3
 };
 
 #ifdef __cplusplus
@@ -32,7 +41,31 @@ int fq_is_full( struct function_queue*, int );
 
 #ifdef __cplusplus
 }
-#endif
 
+namespace fq {
+	/*
+	 * TODO
+	 * Create exception class
+	 */
+
+	class element : public ::function_queue_element {
+	public:
+		element( void );
+		element( void (*)( void* ), void* = 0 );
+	};
+
+	class queue : public ::function_queue {
+	public:
+		queue( unsigned );
+		~queue( void );
+		void push( element&, int );
+		element pop( int );
+		element peek( int );
+		bool is_empty( int );
+		bool is_full( int );
+	};
+}
+
+#endif
 #endif
 

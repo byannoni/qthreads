@@ -16,6 +16,8 @@ static void
 init_attr( void )
 {
 	init_attr_ret.init = pthread_mutexattr_init( &attr );
+
+	/* FIXME Check the value of init_attr_ret.init before running this */
 	init_attr_ret.settype = pthread_mutexattr_settype( &attr,
 			PTHREAD_MUTEX_RECURSIVE );
 }
@@ -33,6 +35,13 @@ fq_init( struct function_queue* q, unsigned max_elements )
 	 * separate function for checking init_attr_ret may be
 	 * implemented in the future so these conditions will no longer
 	 * bitwise-or against ret. 
+	 *
+	 * FIXME
+	 * This needs to check the value of ret before checking the
+	 * init_attr_ret values.
+	 *
+	 * TODO
+	 * Add constants for the bitwise-or's.
 	 */
 	if( init_attr_ret.init ) {
 		ret |= ~-2; 
