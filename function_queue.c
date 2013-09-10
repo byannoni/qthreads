@@ -17,9 +17,10 @@ init_attr( void )
 {
 	init_attr_ret.init = pthread_mutexattr_init( &attr );
 
-	/* FIXME Check the value of init_attr_ret.init before running this */
-	init_attr_ret.settype = pthread_mutexattr_settype( &attr,
-			PTHREAD_MUTEX_RECURSIVE );
+	if( !init_attr_ret.init ) {
+		init_attr_ret.settype = pthread_mutexattr_settype( &attr,
+				PTHREAD_MUTEX_RECURSIVE );
+	}
 }
 
 int
@@ -36,30 +37,30 @@ fq_init( struct function_queue* q, unsigned max_elements )
 	 * implemented in the future so these conditions will no longer
 	 * bitwise-or against ret. 
 	 *
-	 * FIXME
-	 * This needs to check the value of ret before checking the
-	 * init_attr_ret values.
-	 *
 	 * TODO
 	 * Add constants for the bitwise-or's.
 	 */
-	if( init_attr_ret.init ) {
-		ret |= ~-2; 
+	if( !ret ) {
+		if( init_attr_ret.init || init_attr_ret.settype ) {
+			if( init_attr_ret.init ) {
+				ret = ~-2; 
+			}
 
-		if( init_attr_ret.settype ) {
-			ret |= ~-3; 
-		}
-	} else if( !( ret || ( ret = pthread_mutex_init( &q->lock, &attr )))) {
-		q->front = 0;
-		q->back = 0;
-		q->size = 0;
-		q->max_elements = max_elements;
-		q->elements = malloc( q->max_elements *
-				sizeof( struct function_queue_element ));
+			if( init_attr_ret.settype ) {
+				ret |= ~-3;
+			}
+		} else if( !( ret || ( ret = pthread_mutex_init( &q->lock, &attr )))) {
+			q->front = 0;
+			q->back = 0;
+			q->size = 0;
+			q->max_elements = max_elements;
+			q->elements = malloc( q->max_elements *
+					sizeof( struct function_queue_element ));
 
-		if( !q->elements ) {
-			ret = errno;
-			pthread_mutex_destroy( &q->lock );
+			if( !q->elements ) {
+				ret = errno;
+				pthread_mutex_destroy( &q->lock );
+			}
 		}
 	}
 
