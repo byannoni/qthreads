@@ -52,8 +52,11 @@ queue( unsigned max_elements )
 queue::
 ~queue( void )
 {
-	/* TODO add exception handling */
-	fq_destroy( this );
+	int ret = fq_destroy( this );
+
+	if( ret ) {
+		unhandled_errno( ret );
+	}
 }
 
 void
@@ -63,7 +66,7 @@ push( element& e, int block )
 	int ret = fq_push( this, e, block );
 
 	if( ret == ERANGE ) {
-		throw std::overflow_error( "function_queue: overflowed" );
+		throw std::overflow_error( "function_queue: overflow" );
 	} else if( ret ) {
 		unhandled_errno( ret );
 	}
@@ -74,8 +77,14 @@ queue::
 pop( int block )
 {
 	element e;
-	/* TODO add exception handling */
-	fq_pop( this, &e, block );
+	int ret = fq_pop( this, &e, block );
+
+	if( ret == ERANGE ) {
+		throw std::underflow_error( "function_queue: underflow" );
+	} else if( ret ) {
+		unhandled_errno( ret );
+	}
+
 	return e;
 }
 
@@ -84,8 +93,14 @@ queue::
 peek( int block )
 {
 	element e;
-	/* TODO add exception handling */
-	fq_peek( this, &e, block );
+	int ret = fq_peek( this, &e, block );
+
+	if( ret == ERANGE ) {
+		throw std::underflow_error( "function_queue: underflow" );
+	} else if( ret ) {
+		unhandled_errno( ret );
+	}
+
 	return e;
 }
 
@@ -93,15 +108,25 @@ bool
 queue::
 is_empty( int block )
 {
-	/* TODO add exception handling */
-	return fq_is_empty( this, block );
+	int ret = fq_is_empty( this, block );
+
+	if( ret != 0 && ret != 1 ) {
+		unhandled_errno( ret );
+	}
+
+	return ret;
 }
 
 bool
 queue::
 is_full( int block )
 {
-	/* TODO add exception handling */
-	return fq_is_full( this, block );
+	int ret = fq_is_full( this, block );
+
+	if( ret != 0 && ret != 1 ) {
+		unhandled_errno( ret );
+	}
+
+	return ret;
 }
 
