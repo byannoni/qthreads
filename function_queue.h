@@ -23,8 +23,8 @@ struct function_queue {
 };
 
 enum {
-	EMUTEXATTR_INIT = ~ ((unsigned) -1 >> 1 ),
-	EMUTEXATTR_SETTYPE = ~ ((unsigned) -1 >> 2 )
+	EMUTEXATTR_INIT = -1,
+	EMUTEXATTR_SETTYPE = -2
 };
 
 #ifdef __cplusplus
