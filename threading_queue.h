@@ -31,6 +31,17 @@ int tq_stop( struct threading_queue* );
 
 #ifdef __cplusplus
 }
+
+namespace tq {
+	class queue : public ::threading_queue {
+	public:
+		queue( threading_queue_startup_info& );
+		~queue( void );
+
+		void start( void );
+		void stop( void );
+	};
+}
 #endif
 #endif
 
