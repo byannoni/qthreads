@@ -18,6 +18,11 @@ struct function_queue {
 	pthread_mutex_t lock;
 };
 
+enum {
+	EMUTEXATTR_INIT = ~ ((unsigned) -1 >> 1 ),
+	EMUTEXATTR_SETTYPE = ~ ((unsigned) -1 >> 2 )
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif

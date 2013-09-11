@@ -28,26 +28,23 @@ fq_init( struct function_queue* q, unsigned max_elements )
 {
 	int ret = pthread_once( &init_attr_control, init_attr );
 
-	/*
-	 * XXX
-	 * According to the C11 standard, this could conflict with
-	 * implementation-specific errno values. However, this case is
-	 * very unlikely since all common errno values are positive. A
-	 * separate function for checking init_attr_ret may be
-	 * implemented in the future so these conditions will no longer
-	 * bitwise-or against ret. 
-	 *
-	 * TODO
-	 * Add constants for the bitwise-or's.
-	 */
 	if( !ret ) {
+		/*
+		 * XXX
+		 * According to the C11 standard, this could conflict with
+		 * implementation-specific errno values. However, this case is
+		 * very unlikely since all common errno values are positive. A
+		 * separate function for checking init_attr_ret may be
+		 * implemented in the future so these conditions will no longer
+		 * bitwise-or against ret. 
+		 */
 		if( init_attr_ret.init || init_attr_ret.settype ) {
 			if( init_attr_ret.init ) {
-				ret = ~-2; 
+				ret = EMUTEXATTR_INIT; 
 			}
 
 			if( init_attr_ret.settype ) {
-				ret |= ~-3;
+				ret |= EMUTEXATTR_SETTYPE;
 			}
 		} else if( !( ret || ( ret = pthread_mutex_init( &q->lock, &attr )))) {
 			q->front = 0;
