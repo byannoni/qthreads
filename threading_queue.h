@@ -1,4 +1,7 @@
 
+#ifndef THREADING_QUEUE_H
+#define THREADING_QUEUE_H
+
 #include "function_queue.h"
 
 #include <unistd.h>
@@ -28,5 +31,6 @@ int tq_stop( struct threading_queue* );
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 
