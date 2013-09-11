@@ -46,7 +46,7 @@ fq_init( struct function_queue* q, unsigned max_elements )
 			if( init_attr_ret.settype ) {
 				ret |= EMUTEXATTR_SETTYPE;
 			}
-		} else if( !( ret || ( ret = pthread_mutex_init( &q->lock, &attr )))) {
+		} else if( !( ret = pthread_mutex_init( &q->lock, &attr ))) {
 			q->front = 0;
 			q->back = 0;
 			q->size = 0;
