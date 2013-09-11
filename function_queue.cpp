@@ -8,12 +8,18 @@
 
 using namespace fq;
 
+static const std::string error_prefix( "function_queue: " );
+
+static inline void
+throw_runtime_error( std::string what )
+{
+	throw std::runtime_error( error_prefix + what );
+}
+
 static inline void
 unhandled_errno( int err )
 {
-	std::string error_msg( "function_queue: " );
-	error_msg.append( strerror( err ));
-	throw std::runtime_error( error_msg );
+	throw_runtime_error( strerror( err ));
 }
 
 element::
@@ -30,8 +36,17 @@ element( void (* function)( void* ), void* argument )
 queue::
 queue( unsigned max_elements )
 {
-	/* TODO add exception handling */
 	int ret = fq_init( this, max_elements );
+
+	if( ret ) {
+		if( ret == EMUTEXATTR_INIT ) {
+			throw_runtime_error( "error initializing mutex" );
+		} else if( ret == EMUTEXATTR_SETTYPE ) {
+			throw_runtime_error( "could not make mutex recursive" );
+		} else {
+			unhandled_errno( ret );
+		}
+	}
 }
 
 queue::
