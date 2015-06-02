@@ -42,13 +42,8 @@ tq_init( struct threading_queue* tq,
 int
 tq_destroy( struct threading_queue* tq )
 {
-	int ret = tq_stop( tq );
-
-	if( !ret ) {
-		free( tq->threads );
-	}
-
-	return ret;
+	free( tq->threads );
+	return 0;
 }
 
 int
