@@ -3,6 +3,7 @@
 #define FUNCTION_QUEUE_H
 
 #include <pthread.h>
+#include <semaphore.h>
 
 struct function_queue_element {
 	void (* func)(void*);
@@ -12,10 +13,10 @@ struct function_queue_element {
 struct function_queue {
 	struct function_queue_element* elements;
 	pthread_mutex_t lock;
+	sem_t size;
 	unsigned int front;
 	unsigned int back;
 	unsigned int max_elements;
-	unsigned int size;
 };
 
 /*

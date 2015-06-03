@@ -35,16 +35,18 @@ fq_init(struct function_queue* q, unsigned max_elements)
 			if(init_attr_ret.settype != 0)
 				ret = EMUTEXATTR_SETTYPE;
 		} else if((ret = pthread_mutex_init(&q->lock,&attr)) == 0) {
-			q->front = 0;
-			q->back = 0;
-			q->size = 0;
-			q->max_elements = max_elements;
-			q->elements = malloc(q->max_elements *
-					sizeof(struct function_queue_element));
+			if(sem_init(&q->size, 0, 0) != -1) {
+				q->front = 0;
+				q->back = 0;
+				q->max_elements = max_elements;
+				q->elements = malloc(q->max_elements *
+						sizeof(
+						struct function_queue_element));
 
-			if(q->elements == NULL) {
-				ret = errno;
-				pthread_mutex_destroy(&q->lock);
+				if(q->elements == NULL) {
+					ret = errno;
+					pthread_mutex_destroy(&q->lock);
+				}
 			}
 		}
 	}
@@ -53,13 +55,17 @@ fq_init(struct function_queue* q, unsigned max_elements)
 }
 
 int
-fq_destroy(struct function_queue* q)
+fq_destroy( struct function_queue* q )
 {
-	int ret = pthread_mutex_destroy(&q->lock);
+	int ret = pthread_mutex_destroy( &q->lock );
 
 	if(ret == 0) {
-		free((struct function_queue_element*) q->elements);
-		q->elements = NULL;
+		ret = sem_destroy(&q->size);
+
+		if(ret != 0) {
+			free((struct function_queue_element*) q->elements);
+			q->elements = NULL;
+		}
 	}
 
 	return ret;
@@ -79,12 +85,16 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 		if(fq_is_full(q, block) != 0) { /* overflow */
 			ret = ERANGE;
 		} else {
-			++q->size;
+			int ret = sem_post(&q->size);
 
-			if(++q->back == q->max_elements)
-				q->back = 0;
+			if(ret == 0) {
+				if(++q->back == q->max_elements)
+					q->back = 0;
 
-			q->elements[q->back] = e;
+				q->elements[q->back] = e;
+			} else {
+				ret = errno;
+			}
 		}
 
 		pthread_mutex_unlock(&q->lock);
@@ -107,12 +117,19 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 		if(fq_is_empty(q, block) != 0) { /* underflow */
 			ret = ERANGE;
 		} else {
-			--q->size;
+			if( block )
+				ret = sem_wait(&q->size);
+			else
+				ret = sem_trywait(&q->size);
 
-			if(++q->front == q->max_elements)
-				q->front = 0;
+			if(ret == 0) {
+				if(++q->front == q->max_elements)
+					q->front = 0;
 
-			*e = q->elements[q->front];
+				*e = q->elements[q->front];
+			} else {
+				ret = errno;
+			}
 		}
 
 		pthread_mutex_unlock(&q->lock);
@@ -153,16 +170,17 @@ int
 fq_is_empty(struct function_queue* q, int block)
 {
 	int ret;
+	int sval;
 
-	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
-	else
-		ret = pthread_mutex_trylock(&q->lock);
+	/*
+	 * Suppress unused parameter warning.
+	 * TODO remove this parameter later
+	 */
+	(void)block;
+	ret = sem_getvalue(&q->size, &sval);
 
-	if(ret == 0) {
-		ret = q->size == 0;
-		pthread_mutex_unlock(&q->lock);
-	}
+	if(ret == 0)
+		ret = sval == 0;
 
 	return ret;
 }
@@ -171,15 +189,25 @@ int
 fq_is_full(struct function_queue* q, int block)
 {
 	int ret;
+	int sval;
 
-	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
-	else
-		ret = pthread_mutex_trylock(&q->lock);
+	/*
+	 * Suppress unused parameter warning.
+	 * TODO remove this parameter later
+	 */
+	(void)block;
+	ret = sem_getvalue(&q->size, &sval);
 
 	if(ret == 0) {
-		ret = q->size == q->max_elements;
-		pthread_mutex_unlock(&q->lock);
+		if(sval < 0)
+			ret = 0;
+		else
+			/*
+			 * FIXME
+			 * If q->max_elements is greater than INT_MAX, then
+			 * this comparison will always be false.
+			 */
+			ret = (unsigned)sval == q->max_elements;
 	}
 
 	return ret;
