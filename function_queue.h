@@ -18,6 +18,12 @@ struct function_queue {
 	pthread_mutex_t lock;
 };
 
+/*
+ * XXX
+ * According to the C11 standard, this could conflict with implementation-
+ * specific errno values. However, this case is very unlikely since all common
+ * errno values are positive.
+ */
 enum {
 	EMUTEXATTR_INIT = -1,
 	EMUTEXATTR_SETTYPE = -2
