@@ -79,7 +79,7 @@ fq_push( struct function_queue* q, struct function_queue_element e, int block )
 	}
 
 	if( !ret ) {
-		if( fq_is_full( q, 1 )) { /* overflow */
+		if( fq_is_full( q, block )) { /* overflow */
 			ret = ERANGE;
 		} else {
 			++q->size;
@@ -109,7 +109,7 @@ fq_pop( struct function_queue* q, struct function_queue_element* e, int block )
 	}
 
 	if( !ret ) {
-		if( fq_is_empty( q, 1 )) { /* underflow */
+		if( fq_is_empty( q, block )) { /* underflow */
 			ret = ERANGE;
 		} else {
 			--q->size;
@@ -139,7 +139,7 @@ fq_peek( struct function_queue* q, struct function_queue_element* e, int block )
 	}
 
 	if( !ret ) {
-		if( fq_is_empty( q, 1 )) {
+		if( fq_is_empty( q, block )) {
 			ret = ERANGE;
 		} else {
 			unsigned tmp = q->front + 1;
