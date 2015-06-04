@@ -4,6 +4,9 @@ compiler:
   - gcc
   - clang
 
+before_script:
+  - if [ "$CC" = "gcc" ]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90; fi
+
 script:
   - make debug
   - make clean
