@@ -1,0 +1,11 @@
+language: C
+
+compiler:
+  - gcc
+  # Add clang when makefile supports it per #9
+
+script: make
+
+branches:
+  except:
+    - /^\d+-/
