@@ -1,10 +1,16 @@
-language: C
+language: c
 
 compiler:
   - gcc
-  # Add clang when makefile supports it per #9
+  - clang
 
-script: make
+before_script:
+  - if [ "$CC" = "gcc" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; sudo apt-get update -qq; sudo apt-get install -qq g++-4.8; export CC="gcc-4.8"; fi
+
+script:
+  - make debug
+  - make clean
+  - make
 
 branches:
   except:
