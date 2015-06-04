@@ -18,13 +18,11 @@ get_and_run( struct threading_queue* tq )
 
 		usleep( tq->delay );
 	} while( 1 );
-
-	return 0;
 }
 
 int
 tq_init( struct threading_queue* tq,
-		struct threading_queue_startup_info tqsi[static 1] )
+		struct threading_queue_startup_info* tqsi )
 {
 	int ret = 0;
 	tq->fq = tqsi->fq;
