@@ -1,10 +1,13 @@
-language: C
+language: c
 
 compiler:
   - gcc
-  # Add clang when makefile supports it per #9
+  - clang
 
-script: make
+script:
+  - make debug
+  - make clean
+  - make
 
 branches:
   except:
