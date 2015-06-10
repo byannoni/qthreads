@@ -65,15 +65,19 @@ queue( unsigned max_elements )
 	}
 }
 
+void
 queue::
-~queue( void )
+destroy(void)
 {
 	int ret = fq_destroy( this );
 
-	if( ret ) {
+	if( ret )
 		unhandled_errno( ret );
-	}
 }
+
+queue::
+~queue( void )
+{ }
 
 void
 queue::

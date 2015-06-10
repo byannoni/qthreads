@@ -80,6 +80,8 @@ namespace fq {
 	public:
 		queue( unsigned );
 		~queue( void );
+
+		void destroy(void);
 		void push( element&, int );
 		element pop( int );
 		element peek( int );

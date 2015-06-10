@@ -54,6 +54,7 @@ namespace tq {
 		queue( threading_queue_startup_info& );
 		~queue( void );
 
+		void destroy(void);
 		void start( void );
 		void stop( void );
 	};

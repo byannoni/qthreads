@@ -50,12 +50,16 @@ queue( threading_queue_startup_info& tqsi )
 
 queue::
 ~queue( void )
+{ }
+
+void
+queue::
+destroy(void)
 {
 	int ret = tq_destroy( this );
 
-	if( ret ) {
+	if(ret != 0)
 		unhandled_errno( ret );
-	}
 }
 
 void
