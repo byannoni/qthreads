@@ -85,7 +85,7 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 		if(fq_is_full(q, block) != 0) { /* overflow */
 			ret = ERANGE;
 		} else {
-			int ret = sem_post(&q->size);
+			ret = sem_post(&q->size);
 
 			if(ret == 0) {
 				if(++q->back == q->max_elements)
