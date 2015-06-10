@@ -2,6 +2,7 @@
 COBJS=threading_queue_c.o function_queue_c.o
 CPPOBJS=function_queue_cpp.o threading_queue_cpp.o
 OBJS=$(COBJS) $(CPPOBJS)
+CPPFLAGS=-fpic -c -DNDEBUG
 CFLAGS=-fpic -c -DNDEBUG
 DFLAGS=-UNDEBUG -D_DEBUG -pedantic -g -Werror
 
@@ -31,10 +32,10 @@ libqthread: $(OBJS)
 	ar rcs $@.a $^
 
 function_queue_cpp.o: function_queue.cpp function_queue.h
-	$(CC) -Wall -Wextra -fpic -c -o $@ $<
+	$(CXX) $(CPPFLAGS) -o $@ $<
 
 threading_queue_cpp.o: threading_queue.cpp threading_queue.h function_queue.h
-	$(CC) -Wall -Wextra -fpic -c -o $@ $<
+	$(CXX) $(CPPFLAGS) -o $@ $<
 
 libqthread_cpp: libqthread $(CPPOBJS)
 	ar rs $<.a $(CPPOBJS)
