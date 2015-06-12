@@ -30,6 +30,7 @@ get_and_run(struct threading_queue* tq)
 	do {
 		/* NOTE: no errors are defined for sched_yield() */
 		(void) sched_yield();
+		pthread_testcancel();
 
 		if(fq_pop(tq->fq, &fqe, 1) == 0)
 			fqe.func(fqe.arg);
