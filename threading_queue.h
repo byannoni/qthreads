@@ -20,18 +20,15 @@
 
 #include "function_queue.h"
 
-#include <unistd.h>
 
 struct threading_queue_startup_info {
 	struct function_queue* fq;
-	useconds_t delay;
 	unsigned int max_threads;
 };
 
 struct threading_queue {
 	struct function_queue* fq;
 	pthread_t* threads;
-	useconds_t delay;
 	unsigned int max_threads;
 };
 
