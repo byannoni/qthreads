@@ -17,10 +17,10 @@
 
 #include "threading_queue.h"
 
-#include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <pthread.h>
+#include <sched.h>
 
 static void*
 get_and_run(struct threading_queue* tq)
@@ -28,10 +28,13 @@ get_and_run(struct threading_queue* tq)
 	struct function_queue_element fqe;
 
 	do {
+		/* NOTE: no errors are defined for sched_yield() */
+		(void) sched_yield();
+		pthread_testcancel();
+
 		if(fq_pop(tq->fq, &fqe, 1) == 0)
 			fqe.func(fqe.arg);
 
-		usleep(tq->delay);
 	} while(1);
 }
 
@@ -41,7 +44,6 @@ tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
 	int ret = 0;
 	tq->fq = tqsi->fq;
 	tq->max_threads = tqsi->max_threads;
-	tq->delay = tqsi->delay;
 	tq->threads = malloc(tqsi->max_threads * sizeof(pthread_t));
 
 	if(tq->threads == NULL)
