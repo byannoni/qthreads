@@ -23,9 +23,15 @@
 #include <sched.h>
 
 static void*
-get_and_run(struct threading_queue* tq)
+get_and_run(void* arg)
 {
+	struct threading_queue* tq;
 	struct function_queue_element fqe;
+
+	if(arg == NULL)
+		return NULL;
+
+	tq = arg;
 
 	do {
 		/* NOTE: no errors are defined for sched_yield() */
@@ -66,8 +72,7 @@ tq_start(struct threading_queue* tq)
 	unsigned int i = 0;
 
 	for(i = 0; i < tq->max_threads; ++i)
-		if(pthread_create(&tq->threads[i], 0,
-				(void*(*)(void*)) get_and_run, tq) == 0)
+		if(pthread_create(&tq->threads[i], 0, get_and_run, tq) == 0)
 			++ret;
 
 	return ret;
