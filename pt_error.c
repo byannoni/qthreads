@@ -14,8 +14,12 @@ static struct {
 
 static char* pt_strncpy(char* dst, const char* src, size_t n)
 {
-	if(n > 0)
-		(void) memcpy(dst, src, strnlen(src, n) + 1);
+	if(n > 0) {
+		int len = strnlen(src, n);
+
+		(void) memcpy(dst, src, len - 1);
+		dst[len] = '\0';
+	}
 
 	return dst;
 }
