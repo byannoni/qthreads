@@ -10,14 +10,33 @@ static struct {
 	const char* const str;
 } pt_error_map[PT_LAST] = {
 	{ PT_SUCCESS, "Success" },
+	{ PT_EFQFULL, "The function queue was full" },
+	{ PT_EFQEMPTY, "The function queue was empty" },
+	{ PT_EPML, "An error occurred while locking the mutex,"
+		"check errno for more information" },
+	{ PT_EPMTL, "An error occurred while locking the mutex without"
+		"blocking, check errno for more information" },
+	{ PT_EPMU, "An error occurred while unlocking the mutex,"
+		"check errno for more information" },
+	{ PT_EPMAI, "An error occurred while initializing the mutex"
+		"attributes" },
+	{ PT_EPMD, "An error occurred while unlocking the mutex,"
+		"check errno for more information" },
+	{ PT_EPO, "An error occurred while unlocking the mutex,"
+		"check errno for more information" },
+	{ PT_EMALLOC, "An error occurred while unlocking the mutex,"
+		"check errno for more information" },
 };
 
 static char*
 pt_strncpy(char* dst, const char* src, size_t n)
 {
-	if(n > 0) {
-		int len = strnlen(src, n);
+	size_t len = strlen(src);
 
+	if(len > n)
+		len = n;
+
+	if(len > 0) {
 		(void) memcpy(dst, src, len - 1);
 		dst[len] = '\0';
 	}

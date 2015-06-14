@@ -4,6 +4,17 @@
 
 enum pt_error {
 	PT_SUCCESS,
+	PT_EERRNO,
+	PT_EFQFULL,
+	PT_EFQEMPTY,
+	PT_EPML,
+	PT_EPMTL,
+	PT_EPMU,
+	PT_EPMAI,
+	PT_EPMD,
+	PT_EPO,
+	PT_EMALLOC,
+
 	PT_LAST
 };
 
