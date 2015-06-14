@@ -20,6 +20,8 @@
 
 #include <pthread.h>
 
+#include "pt_error.h"
+
 struct function_queue_element {
 	void (* func)(void*);
 	void* arg;
@@ -49,17 +51,19 @@ enum {
 extern "C" {
 #endif
 
-int fq_init(struct function_queue*, unsigned);
-int fq_destroy(struct function_queue*);
-int fq_push(struct function_queue*, struct function_queue_element, int);
-int fq_pop(struct function_queue*, struct function_queue_element*, int);
-int fq_peek(struct function_queue*, struct function_queue_element*, int);
-int fq_is_empty(struct function_queue*, int);
-int fq_is_full(struct function_queue*, int);
+enum pt_error fq_init(struct function_queue*, unsigned);
+enum pt_error fq_destroy(struct function_queue*);
+enum pt_error fq_push(struct function_queue*, struct function_queue_element,
+		int);
+enum pt_error fq_pop(struct function_queue*, struct function_queue_element*,
+		int);
+enum pt_error fq_peek(struct function_queue*, struct function_queue_element*,
+		int);
+enum pt_error fq_is_empty(struct function_queue*, int*, int);
+enum pt_error fq_is_full(struct function_queue*, int*, int);
 
 #ifdef __cplusplus
 }
 #endif
-
 #endif
 
