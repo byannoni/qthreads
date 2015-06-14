@@ -12,7 +12,8 @@ static struct {
 	{ PT_SUCCESS, "Success" },
 };
 
-static char* pt_strncpy(char* dst, const char* src, size_t n)
+static char*
+pt_strncpy(char* dst, const char* src, size_t n)
 {
 	if(n > 0) {
 		int len = strnlen(src, n);
@@ -24,7 +25,8 @@ static char* pt_strncpy(char* dst, const char* src, size_t n)
 	return dst;
 }
 
-int pt_strerror_r(enum pt_error err, char* buf, size_t len)
+int
+pt_strerror_r(enum pt_error err, char* buf, size_t len)
 {
 	int ret = 0;
 
@@ -34,7 +36,7 @@ int pt_strerror_r(enum pt_error err, char* buf, size_t len)
 			(void) pt_strncpy(buf, pt_error_map[err].str, len);
 
 			if(strlen(pt_error_map[err].str) >= len) {
-				errno = EOVERFLOW;
+				errno = ERANGE;
 				ret = 1;
 			}
 		} else {
