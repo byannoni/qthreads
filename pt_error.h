@@ -13,6 +13,7 @@ enum pt_error {
 	PT_EPMAI,
 	PT_EPMD,
 	PT_EPO,
+	PT_EPC,
 	PT_EMALLOC,
 
 	PT_LAST

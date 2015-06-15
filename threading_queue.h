@@ -36,11 +36,11 @@ struct threading_queue {
 extern "C" {
 #endif
 
-int tq_init(struct threading_queue*,
+enum pt_error tq_init(struct threading_queue*,
 		struct threading_queue_startup_info* tqsi);
-int tq_destroy(struct threading_queue*);
-int tq_start(struct threading_queue*);
-int tq_stop(struct threading_queue*);
+enum pt_error tq_destroy(struct threading_queue*);
+enum pt_error tq_start(struct threading_queue*, int*);
+enum pt_error tq_stop(struct threading_queue*);
 
 #ifdef __cplusplus
 }

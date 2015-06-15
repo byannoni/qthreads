@@ -24,6 +24,8 @@ static struct {
 		"check errno for more information" },
 	{ PT_EPO, "An error occurred while unlocking the mutex,"
 		"check errno for more information" },
+	{ PT_EPC, "An error occurred while creating a thread,"
+		"check errno for more information" },
 	{ PT_EMALLOC, "An error occurred while unlocking the mutex,"
 		"check errno for more information" },
 };
