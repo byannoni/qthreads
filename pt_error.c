@@ -20,13 +20,13 @@ static struct {
 		"check errno for more information" },
 	{ PT_EPMAI, "An error occurred while initializing the mutex"
 		"attributes" },
-	{ PT_EPMD, "An error occurred while unlocking the mutex,"
+	{ PT_EPMD, "An error occurred while unlocking a mutex,"
 		"check errno for more information" },
-	{ PT_EPO, "An error occurred while unlocking the mutex,"
+	{ PT_EPO, "An error occurred during dynamic initialization," 
 		"check errno for more information" },
 	{ PT_EPC, "An error occurred while creating a thread,"
 		"check errno for more information" },
-	{ PT_EMALLOC, "An error occurred while unlocking the mutex,"
+	{ PT_EMALLOC, "An error occurred while allocating memory,"
 		"check errno for more information" },
 };
 
