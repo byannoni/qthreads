@@ -12,6 +12,10 @@ else
 	endif
 endif
 
+ifeq ($(DEBUG),1)
+	CFLAGS+= $(DFLAGS)
+endif
+
 ifeq ($(OS),Windows_NT)
 	RM=del
 else
@@ -32,8 +36,7 @@ pt_error.o: pt_error.c pt_error.h
 libqthread: $(OBJS)
 	ar rcs $@.a $^
 
-debug : CFLAGS+= $(DFLAGS)
-debug : all
+.PHONY: debug
 
 test: test/pt_error.c libqthread pt_error.c test/tinytest/tinytest.h
 	$(CC) $(CFLAGS) -pthread -o pt_error_test $<
