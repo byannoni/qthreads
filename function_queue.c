@@ -18,8 +18,10 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "function_queue.h"
+#include "pt_error.h"
 
 static pthread_mutexattr_t attr;
 static pthread_once_t init_attr_control = PTHREAD_ONCE_INIT;
@@ -39,19 +41,20 @@ init_attr(void)
 				PTHREAD_MUTEX_RECURSIVE);
 }
 
-int
+enum pt_error
 fq_init(struct function_queue* q, unsigned max_elements)
 {
-	int ret = pthread_once(&init_attr_control, init_attr);
+	enum pt_error ret = PT_SUCCESS;
+	int po = pthread_once(&init_attr_control, init_attr);
 
-	if(ret == 0) {
-		if(init_attr_ret.init != 0 || init_attr_ret.settype != 0) {
-			if(init_attr_ret.init != 0)
-				ret = EMUTEXATTR_INIT;
+	if(po == 0) {
+		int pml = 0;
 
-			if(init_attr_ret.settype != 0)
-				ret = EMUTEXATTR_SETTYPE;
-		} else if((ret = pthread_mutex_init(&q->lock,&attr)) == 0) {
+		if(init_attr_ret.init != 0) {
+			ret = PT_EPTMLOCK;
+		} else if(init_attr_ret.settype != 0) {
+			ret = PT_EPTMAINIT;
+		} else if((pml = pthread_mutex_init(&q->lock, &attr)) == 0) {
 			q->front = 0;
 			q->back = 0;
 			q->size = 0;
@@ -60,41 +63,55 @@ fq_init(struct function_queue* q, unsigned max_elements)
 					sizeof(struct function_queue_element));
 
 			if(q->elements == NULL) {
-				ret = errno;
-				pthread_mutex_destroy(&q->lock);
+				ret = PT_EMALLOC;
+				pml = pthread_mutex_destroy(&q->lock);
+
+				if(pml != 0)
+					ret = PT_EPTMUNLOCK;
 			}
+		} else {
+			ret = PT_EPTMLOCK;
 		}
+	} else {
+		ret = PT_EPTONCE;
 	}
 
 	return ret;
 }
 
-int
+enum pt_error
 fq_destroy(struct function_queue* q)
 {
-	int ret = pthread_mutex_destroy(&q->lock);
+	enum pt_error ret = PT_SUCCESS;
+	int pmd = pthread_mutex_destroy(&q->lock);
 
-	if(ret == 0) {
+	if(pmd == 0) {
 		free((struct function_queue_element*) q->elements);
 		q->elements = NULL;
+	} else {
+		ret = PT_EPTMDESTROY;
 	}
 
 	return ret;
 }
 
-int
+enum pt_error
 fq_push(struct function_queue* q, struct function_queue_element e, int block)
 {
-	int ret;
+	enum pt_error ret = PT_SUCCESS;
+	int pml = 0;
 
 	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
+		pml = pthread_mutex_lock(&q->lock);
 	else
-		ret = pthread_mutex_trylock(&q->lock);
+		pml = pthread_mutex_trylock(&q->lock);
 
-	if(ret == 0) {
-		if(fq_is_full(q, block) != 0) { /* overflow */
-			ret = ERANGE;
+	if(pml == 0) {
+		int is_full = 0;
+
+		fq_is_full(q, &is_full, block);
+		if(is_full != 0) { /* overflow */
+			ret = PT_EFQFULL;
 		} else {
 			++q->size;
 
@@ -104,25 +121,38 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 			q->elements[q->back] = e;
 		}
 
-		pthread_mutex_unlock(&q->lock);
+		pml = pthread_mutex_unlock(&q->lock);
+
+		if(pml != 0)
+			ret = PT_EPTMUNLOCK;
+	} else {
+		if(block == 0)
+			ret = PT_EPTMTRYLOCK;
+		else
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
 }
 
-int
+enum pt_error
 fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	int ret;
+	enum pt_error ret = PT_SUCCESS;
+	int pml = 0;
 
 	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
+		pml = pthread_mutex_lock(&q->lock);
 	else
-		ret = pthread_mutex_trylock(&q->lock);
+		pml = pthread_mutex_trylock(&q->lock);
 
-	if(ret == 0) {
-		if(fq_is_empty(q, block) != 0) { /* underflow */
-			ret = ERANGE;
+	if(pml == 0) {
+		int is_empty = 0;
+
+		fq_is_empty(q, &is_empty, block);
+
+		if(is_empty != 0) { /* underflow */
+			ret = PT_EFQEMPTY;
 		} else {
 			--q->size;
 
@@ -132,25 +162,38 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 			*e = q->elements[q->front];
 		}
 
-		pthread_mutex_unlock(&q->lock);
+		pml = pthread_mutex_unlock(&q->lock);
+
+		if(pml != 0)
+			ret = PT_EPTMUNLOCK;
+	} else {
+		if(block == 0)
+			ret = PT_EPTMTRYLOCK;
+		else
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
 }
 
-int
+enum pt_error
 fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	int ret;
+	enum pt_error ret = PT_SUCCESS;
+	int pml = 0;
 
-	if(block)
-		ret = pthread_mutex_lock(&q->lock);
+	if(block != 0)
+		pml = pthread_mutex_lock(&q->lock);
 	else
-		ret = pthread_mutex_trylock(&q->lock);
+		pml = pthread_mutex_trylock(&q->lock);
 
 	if(ret == 0) {
-		if(fq_is_empty(q, block)) {
-			ret = ERANGE;
+		int is_empty = 0;
+
+		fq_is_empty(q, &is_empty, block);
+
+		if(is_empty != 0) {
+			ret = PT_EFQEMPTY;
 		} else {
 			unsigned tmp = q->front + 1;
 
@@ -160,43 +203,72 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 			*e = q->elements[tmp];
 		}
 
-		pthread_mutex_unlock(&q->lock);
+		pml = pthread_mutex_unlock(&q->lock);
+
+		if(pml != 0)
+			ret = PT_EPTMUNLOCK;
+	} else {
+		if(block == 0)
+			ret = PT_EPTMTRYLOCK;
+		else
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
 }
 
-int
-fq_is_empty(struct function_queue* q, int block)
+enum pt_error
+fq_is_empty(struct function_queue* q, int* is_empty, int block)
 {
-	int ret;
+	enum pt_error ret = PT_SUCCESS;
+	int pml = 0;
+
+	assert(is_empty != NULL);
 
 	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
+		pml = pthread_mutex_lock(&q->lock);
 	else
-		ret = pthread_mutex_trylock(&q->lock);
+		pml = pthread_mutex_trylock(&q->lock);
 
-	if(ret == 0) {
-		ret = q->size == 0;
-		pthread_mutex_unlock(&q->lock);
+	if(pml == 0) {
+		*is_empty = q->size == 0;
+		pml = pthread_mutex_unlock(&q->lock);
+
+		if(pml != 0)
+			ret = PT_EPTMUNLOCK;
+	} else {
+		if(block == 0)
+			ret = PT_EPTMTRYLOCK;
+		else
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
 }
 
-int
-fq_is_full(struct function_queue* q, int block)
+enum pt_error
+fq_is_full(struct function_queue* q, int* is_empty, int block)
 {
-	int ret;
+	enum pt_error ret = PT_SUCCESS;
+	int pml = 0;
 
 	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
+		pml = pthread_mutex_lock(&q->lock);
 	else
-		ret = pthread_mutex_trylock(&q->lock);
+		pml = pthread_mutex_trylock(&q->lock);
 
 	if(ret == 0) {
-		ret = q->size == q->max_elements;
-		pthread_mutex_unlock(&q->lock);
+		*is_empty = q->size == q->max_elements;
+		
+		pml = pthread_mutex_unlock(&q->lock);
+
+		if(pml != 0)
+			ret = PT_EPTMUNLOCK;
+	} else {
+		if(block == 0)
+			ret = PT_EPTMTRYLOCK;
+		else
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;

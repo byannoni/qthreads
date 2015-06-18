@@ -18,29 +18,38 @@
 #ifndef THREADING_QUEUE_H
 #define THREADING_QUEUE_H
 
+#include <pthread.h>
+
 #include "function_queue.h"
 
+struct tq_start_errors_info {
+	int* errors;
+	size_t current;
+};
 
 struct threading_queue_startup_info {
 	struct function_queue* fq;
-	unsigned int max_threads;
+	size_t max_threads;
 };
 
 struct threading_queue {
+	struct tq_start_errors_info start_errors;
 	struct function_queue* fq;
 	pthread_t* threads;
-	unsigned int max_threads;
+	size_t max_threads;
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int tq_init(struct threading_queue*,
+enum pt_error tq_init(struct threading_queue*,
 		struct threading_queue_startup_info* tqsi);
-int tq_destroy(struct threading_queue*);
-int tq_start(struct threading_queue*);
-int tq_stop(struct threading_queue*);
+enum pt_error tq_destroy(struct threading_queue*);
+enum pt_error tq_start(struct threading_queue*, int*);
+enum pt_error tq_stop(struct threading_queue*);
+enum pt_error tq_start_get_ne(struct threading_queue*, int*);
+enum pt_error tq_start_get_e(struct threading_queue*, size_t, int*);
 
 #ifdef __cplusplus
 }
