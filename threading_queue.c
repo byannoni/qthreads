@@ -111,7 +111,6 @@ tq_start(struct threading_queue* tq, int* started)
 		}
 	}
 
-
 	return ret;
 }
 
@@ -123,7 +122,8 @@ tq_stop(struct threading_queue* tq)
 	unsigned int i = 0;
 
 	for(i = 0; i < tq->max_threads; ++i)
-		pthread_cancel(tq->threads[i]);
+		/* NOTE it is not a problem if pthread_cancel() fails */
+		(void) pthread_cancel(tq->threads[i]);
 
 	return ret;
 }
