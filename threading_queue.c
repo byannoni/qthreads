@@ -50,14 +50,23 @@ get_and_run(void* arg)
 enum pt_error
 tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
 {
-	enum pt_error ret = 0;
+	enum pt_error ret = PT_SUCCESS;
 
 	tq->fq = tqsi->fq;
 	tq->max_threads = tqsi->max_threads;
-	tq->threads = malloc(tqsi->max_threads * sizeof(pthread_t));
+	tq->threads = malloc(tq->max_threads * sizeof(pthread_t));
 
-	if(tq->threads == NULL)
+	if(tq->threads != NULL) {
+		tq->start_errors.current = 0;
+		tq->start_errors.errors = calloc(tq->max_threads, sizeof(int));
+
+		if(tq->start_errors.errors == NULL){
+			free(tq->threads);
+			ret = PT_EMALLOC;
+		}
+	} else {
 		ret = PT_EMALLOC;
+	}
 
 	return ret;
 }
@@ -65,6 +74,7 @@ tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
 enum pt_error
 tq_destroy(struct threading_queue* tq)
 {
+	free(tq->start_errors.errors);
 	free(tq->threads);
 	return PT_SUCCESS;
 }
@@ -78,15 +88,27 @@ tq_start(struct threading_queue* tq, int* started)
 	if(started != NULL) {
 		*started = 0;
 
-		for(i = 0; i < tq->max_threads; ++i)
-			if(pthread_create(&tq->threads[i], 0, get_and_run, tq) != 0)
-				ret = PT_EPTCANCEL;
-			else
+		for(i = 0; i < tq->max_threads; ++i) {
+			if(pthread_create(&tq->threads[i], 0, get_and_run, tq)
+					!= 0) {
+				if(tq->start_errors.errors != NULL)
+					tq->start_errors.errors[i] = errno;
+
+				ret = PT_EPTCREATE;
+			} else {
 				++*started;
+			}
+		}
 	} else {
-		for(i = 0; i < tq->max_threads; ++i)
-			if(pthread_create(&tq->threads[i], 0, get_and_run, tq) != 0)
-				ret = PT_EPTCANCEL;
+		for(i = 0; i < tq->max_threads; ++i) {
+			if(pthread_create(&tq->threads[i], 0, get_and_run, tq)
+					!= 0) {
+				if(tq->start_errors.errors != NULL)
+					tq->start_errors.errors[i] = errno;
+
+				ret = PT_EPTCREATE;
+			}
+		}
 	}
 
 

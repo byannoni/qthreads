@@ -18,8 +18,14 @@
 #ifndef THREADING_QUEUE_H
 #define THREADING_QUEUE_H
 
+#include <pthread.h>
+
 #include "function_queue.h"
 
+struct tq_start_errors_info {
+	int* errors;
+	size_t current;
+};
 
 struct threading_queue_startup_info {
 	struct function_queue* fq;
@@ -27,6 +33,7 @@ struct threading_queue_startup_info {
 };
 
 struct threading_queue {
+	struct tq_start_errors_info start_errors;
 	struct function_queue* fq;
 	pthread_t* threads;
 	unsigned int max_threads;
