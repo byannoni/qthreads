@@ -8,23 +8,23 @@
 static struct {
 	const enum pt_error err;
 	const char* const str;
-} pt_error_map[PT_LAST] = {
+} pt_error_map[PT_ELAST] = {
 	{ PT_SUCCESS, "Success" },
 	{ PT_EFQFULL, "The function queue was full" },
 	{ PT_EFQEMPTY, "The function queue was empty" },
-	{ PT_EPML, "An error occurred while locking the mutex,"
+	{ PT_EPTMLOCK, "An error occurred while locking the mutex,"
 		"check errno for more information" },
-	{ PT_EPMTL, "An error occurred while locking the mutex without"
+	{ PT_EPTMTRYLOCK, "An error occurred while locking the mutex without"
 		"blocking, check errno for more information" },
-	{ PT_EPMU, "An error occurred while unlocking the mutex,"
+	{ PT_EPTMUNLOCK, "An error occurred while unlocking the mutex,"
 		"check errno for more information" },
-	{ PT_EPMAI, "An error occurred while initializing the mutex"
+	{ PT_EPTMAINIT, "An error occurred while initializing the mutex"
 		"attributes" },
-	{ PT_EPMD, "An error occurred while unlocking a mutex,"
+	{ PT_EPTMDESTROY, "An error occurred while unlocking a mutex,"
 		"check errno for more information" },
-	{ PT_EPO, "An error occurred during dynamic initialization," 
+	{ PT_EPTONCE, "An error occurred during dynamic initialization," 
 		"check errno for more information" },
-	{ PT_EPC, "An error occurred while creating a thread,"
+	{ PT_EPTCANCEL, "An error occurred while creating a thread,"
 		"check errno for more information" },
 	{ PT_EMALLOC, "An error occurred while allocating memory,"
 		"check errno for more information" },
@@ -52,7 +52,7 @@ pt_strerror_r(enum pt_error err, char* buf, size_t len)
 	int ret = 0;
 
 	if(len > 0) {
-		if(err < PT_LAST && err >= PT_SUCCESS) {
+		if(err < PT_ELAST && err >= PT_SUCCESS) {
 			assert(err == pt_error_map[err].err);
 			(void) pt_strncpy(buf, pt_error_map[err].str, len);
 

@@ -7,16 +7,16 @@ enum pt_error {
 	PT_EERRNO,
 	PT_EFQFULL,
 	PT_EFQEMPTY,
-	PT_EPML,
-	PT_EPMTL,
-	PT_EPMU,
-	PT_EPMAI,
-	PT_EPMD,
-	PT_EPO,
-	PT_EPC,
+	PT_EPTMLOCK,
+	PT_EPTMTRYLOCK,
+	PT_EPTMUNLOCK,
+	PT_EPTMAINIT,
+	PT_EPTMDESTROY,
+	PT_EPTONCE,
+	PT_EPTCANCEL,
 	PT_EMALLOC,
 
-	PT_LAST
+	PT_ELAST
 };
 
 int pt_strerror_r(enum pt_error, char*, size_t);

@@ -51,9 +51,9 @@ fq_init(struct function_queue* q, unsigned max_elements)
 		int pml = 0;
 
 		if(init_attr_ret.init != 0) {
-			ret = PT_EPML;
+			ret = PT_EPTMLOCK;
 		} else if(init_attr_ret.settype != 0) {
-			ret = PT_EPMAI;
+			ret = PT_EPTMAINIT;
 		} else if((pml = pthread_mutex_init(&q->lock, &attr)) == 0) {
 			q->front = 0;
 			q->back = 0;
@@ -67,13 +67,13 @@ fq_init(struct function_queue* q, unsigned max_elements)
 				pml = pthread_mutex_destroy(&q->lock);
 
 				if(pml != 0)
-					ret = PT_EPMU;
+					ret = PT_EPTMUNLOCK;
 			}
 		} else {
-			ret = PT_EPML;
+			ret = PT_EPTMLOCK;
 		}
 	} else {
-		ret = PT_EPO;
+		ret = PT_EPTONCE;
 	}
 
 	return ret;
@@ -89,7 +89,7 @@ fq_destroy(struct function_queue* q)
 		free((struct function_queue_element*) q->elements);
 		q->elements = NULL;
 	} else {
-		ret = PT_EPMD;
+		ret = PT_EPTMDESTROY;
 	}
 
 	return ret;
@@ -124,12 +124,12 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 		pml = pthread_mutex_unlock(&q->lock);
 
 		if(pml != 0)
-			ret = PT_EPMU;
+			ret = PT_EPTMUNLOCK;
 	} else {
 		if(block == 0)
-			ret = PT_EPMTL;
+			ret = PT_EPTMTRYLOCK;
 		else
-			ret = PT_EPML;
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
@@ -165,12 +165,12 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 		pml = pthread_mutex_unlock(&q->lock);
 
 		if(pml != 0)
-			ret = PT_EPMU;
+			ret = PT_EPTMUNLOCK;
 	} else {
 		if(block == 0)
-			ret = PT_EPMTL;
+			ret = PT_EPTMTRYLOCK;
 		else
-			ret = PT_EPML;
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
@@ -206,12 +206,12 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 		pml = pthread_mutex_unlock(&q->lock);
 
 		if(pml != 0)
-			ret = PT_EPMU;
+			ret = PT_EPTMUNLOCK;
 	} else {
 		if(block == 0)
-			ret = PT_EPMTL;
+			ret = PT_EPTMTRYLOCK;
 		else
-			ret = PT_EPML;
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
@@ -235,12 +235,12 @@ fq_is_empty(struct function_queue* q, int* is_empty, int block)
 		pml = pthread_mutex_unlock(&q->lock);
 
 		if(pml != 0)
-			ret = PT_EPMU;
+			ret = PT_EPTMUNLOCK;
 	} else {
 		if(block == 0)
-			ret = PT_EPMTL;
+			ret = PT_EPTMTRYLOCK;
 		else
-			ret = PT_EPML;
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;
@@ -263,12 +263,12 @@ fq_is_full(struct function_queue* q, int* is_empty, int block)
 		pml = pthread_mutex_unlock(&q->lock);
 
 		if(pml != 0)
-			ret = PT_EPMU;
+			ret = PT_EPTMUNLOCK;
 	} else {
 		if(block == 0)
-			ret = PT_EPMTL;
+			ret = PT_EPTMTRYLOCK;
 		else
-			ret = PT_EPML;
+			ret = PT_EPTMLOCK;
 	}
 
 	return ret;

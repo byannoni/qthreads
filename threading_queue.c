@@ -80,13 +80,13 @@ tq_start(struct threading_queue* tq, int* started)
 
 		for(i = 0; i < tq->max_threads; ++i)
 			if(pthread_create(&tq->threads[i], 0, get_and_run, tq) != 0)
-				ret = PT_EPC;
+				ret = PT_EPTCANCEL;
 			else
 				++*started;
 	} else {
 		for(i = 0; i < tq->max_threads; ++i)
 			if(pthread_create(&tq->threads[i], 0, get_and_run, tq) != 0)
-				ret = PT_EPC;
+				ret = PT_EPTCANCEL;
 	}
 
 
