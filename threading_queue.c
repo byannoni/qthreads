@@ -128,3 +128,33 @@ tq_stop(struct threading_queue* tq)
 	return ret;
 }
 
+enum pt_error
+tq_start_get_ne(struct threading_queue* tq, int* out)
+{
+	enum pt_error ret = PT_SUCCESS;
+
+	assert(tq != NULL);
+	assert(out != NULL);
+	ret = tq_start_get_e(tq, tq->start_errors.current, out);
+	++tq->start_errors.current;
+	return ret;
+}
+
+enum pt_error
+tq_start_get_e(struct threading_queue* tq, size_t n, int* out)
+{
+	enum pt_error ret = PT_SUCCESS;
+
+	assert(tq != NULL);
+	assert(out != NULL);
+
+	if(n < tq->max_threads) {
+		*out = tq->start_errors.errors[n];
+	} else {
+		errno = EINVAL;
+		ret = PT_EERRNO;
+	}
+
+	return ret;
+}
+
