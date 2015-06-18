@@ -40,7 +40,7 @@ static struct {
 		"check errno for more information" },
 	{ PT_EPTONCE, "An error occurred during dynamic initialization," 
 		"check errno for more information" },
-	{ PT_EPTCANCEL, "An error occurred while creating a thread,"
+	{ PT_EPTCREATE, "An error occurred while creating a thread,"
 		"check errno for more information" },
 	{ PT_EMALLOC, "An error occurred while allocating memory,"
 		"check errno for more information" },
