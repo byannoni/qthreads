@@ -56,7 +56,7 @@ pt_strncpy(char* dst, const char* src, size_t n)
 		len = n;
 
 	if(len > 0) {
-		(void) memcpy(dst, src, len - 1);
+		(void) memcpy(dst, src, len);
 		dst[len] = '\0';
 	}
 
@@ -71,9 +71,9 @@ pt_strerror_r(enum pt_error err, char* buf, size_t len)
 	if(len > 0) {
 		if(err < PT_ELAST && err >= PT_SUCCESS) {
 			assert(err == pt_error_map[err].err);
-			(void) pt_strncpy(buf, pt_error_map[err].str, len);
+			(void) pt_strncpy(buf, pt_error_map[err].str, len - 1);
 
-			if(strlen(pt_error_map[err].str) >= len) {
+			if(strlen(pt_error_map[err].str) >= len - 2) {
 				errno = ERANGE;
 				ret = 1;
 			}
