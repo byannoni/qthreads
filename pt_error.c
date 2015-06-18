@@ -26,6 +26,7 @@ static struct {
 	const char* const str;
 } pt_error_map[PT_ELAST] = {
 	{ PT_SUCCESS, "Success" },
+	{ PT_EERRNO, "Check errno for more information" },
 	{ PT_EFQFULL, "The function queue was full" },
 	{ PT_EFQEMPTY, "The function queue was empty" },
 	{ PT_EPTMLOCK, "An error occurred while locking the mutex,"
