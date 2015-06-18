@@ -36,17 +36,6 @@ struct function_queue {
 	unsigned int size;
 };
 
-/*
- * XXX
- * According to the C11 standard, this could conflict with implementation-
- * specific errno values. However, this case is very unlikely since all common
- * errno values are positive.
- */
-enum {
-	EMUTEXATTR_INIT = -1,
-	EMUTEXATTR_SETTYPE = -2
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
