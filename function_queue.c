@@ -23,57 +23,29 @@
 #include "function_queue.h"
 #include "pt_error.h"
 
-static pthread_mutexattr_t attr;
-static pthread_once_t init_attr_control = PTHREAD_ONCE_INIT;
-
-static struct {
-	int init;
-	int settype;
-} init_attr_ret;
-
-static void
-init_attr(void)
-{
-	init_attr_ret.init = pthread_mutexattr_init(&attr);
-
-	if(init_attr_ret.init == 0)
-		init_attr_ret.settype = pthread_mutexattr_settype(&attr,
-				PTHREAD_MUTEX_RECURSIVE);
-}
-
 enum pt_error
 fq_init(struct function_queue* q, unsigned max_elements)
 {
 	enum pt_error ret = PT_SUCCESS;
-	int po = pthread_once(&init_attr_control, init_attr);
+	int pml = 0;
 
-	if(po == 0) {
-		int pml = 0;
+	if((pml = pthread_mutex_init(&q->lock, NULL)) == 0) {
+		q->front = 0;
+		q->back = 0;
+		q->size = 0;
+		q->max_elements = max_elements;
+		q->elements = malloc(q->max_elements *
+				sizeof(struct function_queue_element));
 
-		if(init_attr_ret.init != 0) {
-			ret = PT_EPTMLOCK;
-		} else if(init_attr_ret.settype != 0) {
-			ret = PT_EPTMAINIT;
-		} else if((pml = pthread_mutex_init(&q->lock, &attr)) == 0) {
-			q->front = 0;
-			q->back = 0;
-			q->size = 0;
-			q->max_elements = max_elements;
-			q->elements = malloc(q->max_elements *
-					sizeof(struct function_queue_element));
+		if(q->elements == NULL) {
+			ret = PT_EMALLOC;
+			pml = pthread_mutex_destroy(&q->lock);
 
-			if(q->elements == NULL) {
-				ret = PT_EMALLOC;
-				pml = pthread_mutex_destroy(&q->lock);
-
-				if(pml != 0)
-					ret = PT_EPTMUNLOCK;
-			}
-		} else {
-			ret = PT_EPTMLOCK;
+			if(pml != 0)
+				ret = PT_EPTMUNLOCK;
 		}
 	} else {
-		ret = PT_EPTONCE;
+		ret = PT_EPTMLOCK;
 	}
 
 	return ret;
