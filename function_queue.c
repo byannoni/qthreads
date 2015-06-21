@@ -110,6 +110,7 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 		int is_full = 0;
 
 		fq_is_full(q, &is_full, block);
+
 		if(is_full != 0) { /* overflow */
 			ret = PT_EFQFULL;
 		} else {
@@ -119,6 +120,10 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 				q->back = 0;
 
 			q->elements[q->back] = e;
+
+			/* Only signal if the queue was empty before */
+			if(q->size == 1)
+				(void) pthread_cond_signal(&q->wait);
 		}
 
 		pml = pthread_mutex_unlock(&q->lock);
@@ -151,9 +156,19 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 
 		fq_is_empty(q, &is_empty, block);
 
-		if(is_empty != 0) { /* underflow */
-			ret = PT_EFQEMPTY;
-		} else {
+		if(is_empty) {
+			if(block) {
+				do {
+					pthread_cond_wait(&q->wait, &q->lock);
+					fq_is_empty(q, &is_empty, block);
+				} while(is_empty);
+			} else {
+				ret = PT_EFQEMPTY;
+			}
+		}
+
+		/* NOTE: This cannot be an else because is_empty could change if we block */
+		if(!is_empty) {
 			--q->size;
 
 			if(++q->front == q->max_elements)
@@ -192,9 +207,19 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 
 		fq_is_empty(q, &is_empty, block);
 
-		if(is_empty != 0) {
-			ret = PT_EFQEMPTY;
-		} else {
+		if(is_empty) {
+			if(block) {
+				do {
+					pthread_cond_wait(&q->wait, &q->lock);
+					fq_is_empty(q, &is_empty, block);
+				} while(is_empty);
+			} else {
+				ret = PT_EFQEMPTY;
+			}
+		}
+
+		/* NOTE: This cannot be an else because is_empty could change if we block */
+		if(!is_empty) {
 			unsigned tmp = q->front + 1;
 
 			if(tmp == q->max_elements)

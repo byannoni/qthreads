@@ -30,6 +30,7 @@ struct function_queue_element {
 struct function_queue {
 	struct function_queue_element* elements;
 	pthread_mutex_t lock;
+	pthread_cond_t wait;
 	unsigned int front;
 	unsigned int back;
 	unsigned int max_elements;
