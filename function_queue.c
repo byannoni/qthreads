@@ -246,28 +246,14 @@ enum pt_error
 fq_is_empty(struct function_queue* q, int* is_empty, int block)
 {
 	enum pt_error ret = PT_SUCCESS;
-	int pml = 0;
 
+	/*
+	 * Suppress warning about unused parameter until next breaking update
+	 * when parameter is removed
+	 */
+	(void) block;
 	assert(is_empty != NULL);
-
-	if(block != 0)
-		pml = pthread_mutex_lock(&q->lock);
-	else
-		pml = pthread_mutex_trylock(&q->lock);
-
-	if(pml == 0) {
-		*is_empty = q->size == 0;
-		pml = pthread_mutex_unlock(&q->lock);
-
-		if(pml != 0)
-			ret = PT_EPTMUNLOCK;
-	} else {
-		if(block == 0)
-			ret = PT_EPTMTRYLOCK;
-		else
-			ret = PT_EPTMLOCK;
-	}
-
+	*is_empty = q->size == 0;
 	return ret;
 }
 
@@ -275,27 +261,14 @@ enum pt_error
 fq_is_full(struct function_queue* q, int* is_empty, int block)
 {
 	enum pt_error ret = PT_SUCCESS;
-	int pml = 0;
 
-	if(block != 0)
-		pml = pthread_mutex_lock(&q->lock);
-	else
-		pml = pthread_mutex_trylock(&q->lock);
-
-	if(ret == 0) {
-		*is_empty = q->size == q->max_elements;
-		
-		pml = pthread_mutex_unlock(&q->lock);
-
-		if(pml != 0)
-			ret = PT_EPTMUNLOCK;
-	} else {
-		if(block == 0)
-			ret = PT_EPTMTRYLOCK;
-		else
-			ret = PT_EPTMLOCK;
-	}
-
+	/*
+	 * Suppress warning about unused parameter until next breaking update
+	 * when parameter is removed
+	 */
+	(void) block;
+	assert(is_empty != NULL);
+	*is_empty = q->size == q->max_elements;
 	return ret;
 }
 
