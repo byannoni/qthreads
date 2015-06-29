@@ -23,57 +23,29 @@
 #include "function_queue.h"
 #include "pt_error.h"
 
-static pthread_mutexattr_t attr;
-static pthread_once_t init_attr_control = PTHREAD_ONCE_INIT;
-
-static struct {
-	int init;
-	int settype;
-} init_attr_ret;
-
-static void
-init_attr(void)
-{
-	init_attr_ret.init = pthread_mutexattr_init(&attr);
-
-	if(init_attr_ret.init == 0)
-		init_attr_ret.settype = pthread_mutexattr_settype(&attr,
-				PTHREAD_MUTEX_RECURSIVE);
-}
-
 enum pt_error
 fq_init(struct function_queue* q, unsigned max_elements)
 {
 	enum pt_error ret = PT_SUCCESS;
-	int po = pthread_once(&init_attr_control, init_attr);
+	int pml = 0;
 
-	if(po == 0) {
-		int pml = 0;
+	if((pml = pthread_mutex_init(&q->lock, NULL)) == 0) {
+		q->front = 0;
+		q->back = 0;
+		q->size = 0;
+		q->max_elements = max_elements;
+		q->elements = malloc(q->max_elements *
+				sizeof(struct function_queue_element));
 
-		if(init_attr_ret.init != 0) {
-			ret = PT_EPTMLOCK;
-		} else if(init_attr_ret.settype != 0) {
-			ret = PT_EPTMAINIT;
-		} else if((pml = pthread_mutex_init(&q->lock, &attr)) == 0) {
-			q->front = 0;
-			q->back = 0;
-			q->size = 0;
-			q->max_elements = max_elements;
-			q->elements = malloc(q->max_elements *
-					sizeof(struct function_queue_element));
+		if(q->elements == NULL) {
+			ret = PT_EMALLOC;
+			pml = pthread_mutex_destroy(&q->lock);
 
-			if(q->elements == NULL) {
-				ret = PT_EMALLOC;
-				pml = pthread_mutex_destroy(&q->lock);
-
-				if(pml != 0)
-					ret = PT_EPTMUNLOCK;
-			}
-		} else {
-			ret = PT_EPTMLOCK;
+			if(pml != 0)
+				ret = PT_EPTMUNLOCK;
 		}
 	} else {
-		ret = PT_EPTONCE;
+		ret = PT_EPTMLOCK;
 	}
 
 	return ret;
@@ -109,7 +81,8 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 	if(pml == 0) {
 		int is_full = 0;
 
-		fq_is_full(q, &is_full, block);
+		fq_is_full(q, &is_full);
+
 		if(is_full != 0) { /* overflow */
 			ret = PT_EFQFULL;
 		} else {
@@ -119,6 +92,10 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 				q->back = 0;
 
 			q->elements[q->back] = e;
+
+			/* Only signal if the queue was empty before */
+			if(q->size == 1)
+				(void) pthread_cond_signal(&q->wait);
 		}
 
 		pml = pthread_mutex_unlock(&q->lock);
@@ -149,11 +126,21 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 	if(pml == 0) {
 		int is_empty = 0;
 
-		fq_is_empty(q, &is_empty, block);
+		fq_is_empty(q, &is_empty);
 
-		if(is_empty != 0) { /* underflow */
-			ret = PT_EFQEMPTY;
-		} else {
+		if(is_empty) {
+			if(block) {
+				do {
+					pthread_cond_wait(&q->wait, &q->lock);
+					fq_is_empty(q, &is_empty);
+				} while(is_empty);
+			} else {
+				ret = PT_EFQEMPTY;
+			}
+		}
+
+		/* NOTE: This cannot be an else because is_empty could change if we block */
+		if(!is_empty) {
 			--q->size;
 
 			if(++q->front == q->max_elements)
@@ -190,11 +177,21 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 	if(ret == 0) {
 		int is_empty = 0;
 
-		fq_is_empty(q, &is_empty, block);
+		fq_is_empty(q, &is_empty);
 
-		if(is_empty != 0) {
-			ret = PT_EFQEMPTY;
-		} else {
+		if(is_empty) {
+			if(block) {
+				do {
+					pthread_cond_wait(&q->wait, &q->lock);
+					fq_is_empty(q, &is_empty);
+				} while(is_empty);
+			} else {
+				ret = PT_EFQEMPTY;
+			}
+		}
+
+		/* NOTE: This cannot be an else because is_empty could change if we block */
+		if(!is_empty) {
 			unsigned tmp = q->front + 1;
 
 			if(tmp == q->max_elements)
@@ -218,59 +215,22 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 }
 
 enum pt_error
-fq_is_empty(struct function_queue* q, int* is_empty, int block)
+fq_is_empty(struct function_queue* q, int* is_empty)
 {
 	enum pt_error ret = PT_SUCCESS;
-	int pml = 0;
 
 	assert(is_empty != NULL);
-
-	if(block != 0)
-		pml = pthread_mutex_lock(&q->lock);
-	else
-		pml = pthread_mutex_trylock(&q->lock);
-
-	if(pml == 0) {
-		*is_empty = q->size == 0;
-		pml = pthread_mutex_unlock(&q->lock);
-
-		if(pml != 0)
-			ret = PT_EPTMUNLOCK;
-	} else {
-		if(block == 0)
-			ret = PT_EPTMTRYLOCK;
-		else
-			ret = PT_EPTMLOCK;
-	}
-
+	*is_empty = q->size == 0;
 	return ret;
 }
 
 enum pt_error
-fq_is_full(struct function_queue* q, int* is_empty, int block)
+fq_is_full(struct function_queue* q, int* is_empty)
 {
 	enum pt_error ret = PT_SUCCESS;
-	int pml = 0;
 
-	if(block != 0)
-		pml = pthread_mutex_lock(&q->lock);
-	else
-		pml = pthread_mutex_trylock(&q->lock);
-
-	if(ret == 0) {
-		*is_empty = q->size == q->max_elements;
-		
-		pml = pthread_mutex_unlock(&q->lock);
-
-		if(pml != 0)
-			ret = PT_EPTMUNLOCK;
-	} else {
-		if(block == 0)
-			ret = PT_EPTMTRYLOCK;
-		else
-			ret = PT_EPTMLOCK;
-	}
-
+	assert(is_empty != NULL);
+	*is_empty = q->size == q->max_elements;
 	return ret;
 }
 
