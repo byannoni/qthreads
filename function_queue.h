@@ -49,8 +49,8 @@ enum pt_error fq_pop(struct function_queue*, struct function_queue_element*,
 		int);
 enum pt_error fq_peek(struct function_queue*, struct function_queue_element*,
 		int);
-enum pt_error fq_is_empty(struct function_queue*, int*, int);
-enum pt_error fq_is_full(struct function_queue*, int*, int);
+enum pt_error fq_is_empty(struct function_queue*, int*);
+enum pt_error fq_is_full(struct function_queue*, int*);
 
 #ifdef __cplusplus
 }

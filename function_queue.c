@@ -81,7 +81,7 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 	if(pml == 0) {
 		int is_full = 0;
 
-		fq_is_full(q, &is_full, block);
+		fq_is_full(q, &is_full);
 
 		if(is_full != 0) { /* overflow */
 			ret = PT_EFQFULL;
@@ -126,13 +126,13 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 	if(pml == 0) {
 		int is_empty = 0;
 
-		fq_is_empty(q, &is_empty, block);
+		fq_is_empty(q, &is_empty);
 
 		if(is_empty) {
 			if(block) {
 				do {
 					pthread_cond_wait(&q->wait, &q->lock);
-					fq_is_empty(q, &is_empty, block);
+					fq_is_empty(q, &is_empty);
 				} while(is_empty);
 			} else {
 				ret = PT_EFQEMPTY;
@@ -177,13 +177,13 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 	if(ret == 0) {
 		int is_empty = 0;
 
-		fq_is_empty(q, &is_empty, block);
+		fq_is_empty(q, &is_empty);
 
 		if(is_empty) {
 			if(block) {
 				do {
 					pthread_cond_wait(&q->wait, &q->lock);
-					fq_is_empty(q, &is_empty, block);
+					fq_is_empty(q, &is_empty);
 				} while(is_empty);
 			} else {
 				ret = PT_EFQEMPTY;
@@ -215,30 +215,20 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 }
 
 enum pt_error
-fq_is_empty(struct function_queue* q, int* is_empty, int block)
+fq_is_empty(struct function_queue* q, int* is_empty)
 {
 	enum pt_error ret = PT_SUCCESS;
 
-	/*
-	 * Suppress warning about unused parameter until next breaking update
-	 * when parameter is removed
-	 */
-	(void) block;
 	assert(is_empty != NULL);
 	*is_empty = q->size == 0;
 	return ret;
 }
 
 enum pt_error
-fq_is_full(struct function_queue* q, int* is_empty, int block)
+fq_is_full(struct function_queue* q, int* is_empty)
 {
 	enum pt_error ret = PT_SUCCESS;
 
-	/*
-	 * Suppress warning about unused parameter until next breaking update
-	 * when parameter is removed
-	 */
-	(void) block;
 	assert(is_empty != NULL);
 	*is_empty = q->size == q->max_elements;
 	return ret;
