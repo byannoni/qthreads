@@ -52,6 +52,9 @@ pt_strncpy(char* dst, const char* src, size_t n)
 {
 	size_t len = strlen(src);
 
+	assert(dst != NULL);
+	assert(src != NULL);
+
 	if(len > n)
 		len = n;
 

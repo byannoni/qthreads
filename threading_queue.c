@@ -51,6 +51,9 @@ enum pt_error
 tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
 {
 	enum pt_error ret = PT_SUCCESS;
+	
+	assert(tq != NULL);
+	assert(tqsi != NULL);
 
 	tq->fq = tqsi->fq;
 	tq->max_threads = tqsi->max_threads;
@@ -74,6 +77,7 @@ tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
 enum pt_error
 tq_destroy(struct threading_queue* tq)
 {
+	assert(tq != NULL);
 	free(tq->start_errors.errors);
 	free(tq->threads);
 	return PT_SUCCESS;
@@ -84,6 +88,8 @@ tq_start(struct threading_queue* tq, int* started)
 {
 	enum pt_error ret = PT_SUCCESS;
 	unsigned int i = 0;
+
+	assert(tq != NULL);
 
 	if(started != NULL) {
 		*started = 0;
@@ -120,6 +126,8 @@ tq_stop(struct threading_queue* tq)
 {
 	enum pt_error ret = PT_SUCCESS;
 	unsigned int i = 0;
+
+	assert(tq != NULL);
 
 	for(i = 0; i < tq->max_threads; ++i)
 		/* NOTE it is not a problem if pthread_cancel() fails */

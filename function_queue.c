@@ -29,6 +29,8 @@ fq_init(struct function_queue* q, unsigned max_elements)
 	enum pt_error ret = PT_SUCCESS;
 	int pml = 0;
 
+	assert(q != NULL);
+
 	if((pml = pthread_mutex_init(&q->lock, NULL)) == 0) {
 		q->front = 0;
 		q->back = 0;
@@ -57,6 +59,8 @@ fq_destroy(struct function_queue* q)
 	enum pt_error ret = PT_SUCCESS;
 	int pmd = pthread_mutex_destroy(&q->lock);
 
+	assert(q != NULL);
+
 	if(pmd == 0) {
 		free((struct function_queue_element*) q->elements);
 		q->elements = NULL;
@@ -72,6 +76,8 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 {
 	enum pt_error ret = PT_SUCCESS;
 	int pml = 0;
+
+	assert(q != NULL);
 
 	if(block != 0)
 		pml = pthread_mutex_lock(&q->lock);
@@ -117,6 +123,9 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 {
 	enum pt_error ret = PT_SUCCESS;
 	int pml = 0;
+
+	assert(q != NULL);
+	assert(e != NULL);
 
 	if(block != 0)
 		pml = pthread_mutex_lock(&q->lock);
@@ -169,6 +178,9 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 	enum pt_error ret = PT_SUCCESS;
 	int pml = 0;
 
+	assert(q != NULL);
+	assert(e != NULL);
+
 	if(block != 0)
 		pml = pthread_mutex_lock(&q->lock);
 	else
@@ -219,6 +231,7 @@ fq_is_empty(struct function_queue* q, int* is_empty)
 {
 	enum pt_error ret = PT_SUCCESS;
 
+	assert(q != NULL);
 	assert(is_empty != NULL);
 	*is_empty = q->size == 0;
 	return ret;
@@ -229,6 +242,7 @@ fq_is_full(struct function_queue* q, int* is_empty)
 {
 	enum pt_error ret = PT_SUCCESS;
 
+	assert(q != NULL);
 	assert(is_empty != NULL);
 	*is_empty = q->size == q->max_elements;
 	return ret;
