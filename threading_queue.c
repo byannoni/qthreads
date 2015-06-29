@@ -122,7 +122,7 @@ tq_start(struct threading_queue* tq, int* started)
 
 
 enum pt_error
-tq_stop(struct threading_queue* tq)
+tq_stop(struct threading_queue* tq, int join)
 {
 	enum pt_error ret = PT_SUCCESS;
 	unsigned int i = 0;
@@ -132,6 +132,10 @@ tq_stop(struct threading_queue* tq)
 	for(i = 0; i < tq->max_threads; ++i)
 		/* NOTE it is not a problem if pthread_cancel() fails */
 		(void) pthread_cancel(tq->threads[i]);
+
+	if(join)
+		for(i = 0; i < tq->max_threads; ++i)
+			(void) pthread_join(tq->threads[i], NULL);
 
 	return ret;
 }
