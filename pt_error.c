@@ -37,7 +37,7 @@ static struct {
 		"check errno for more information" },
 	{ PT_EPTMAINIT, "An error occurred while initializing the mutex"
 		"attributes" },
-	{ PT_EPTMDESTROY, "An error occurred while unlocking a mutex,"
+	{ PT_EPTMDESTROY, "An error occurred while destroying a mutex,"
 		"check errno for more information" },
 	{ PT_EPTONCE, "An error occurred during dynamic initialization," 
 		"check errno for more information" },
