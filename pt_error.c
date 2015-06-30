@@ -45,6 +45,10 @@ static struct {
 		"check errno for more information" },
 	{ PT_EMALLOC, "An error occurred while allocating memory,"
 		"check errno for more information" },
+	{ PT_EPTCINIT, "An error occurred while initializing a condition"
+		"variable, check errno for more information" },
+	{ PT_EPTCDESTROY, "An error occurred while destroying a condition"
+		"variable, check errno for more information" },
 };
 
 static char*

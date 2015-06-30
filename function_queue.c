@@ -43,8 +43,14 @@ fq_init(struct function_queue* q, unsigned max_elements)
 			ret = PT_EMALLOC;
 			pml = pthread_mutex_destroy(&q->lock);
 
-			if(pml != 0)
+			if(pml == 0) {
+				pml = pthread_cond_init(&q->wait, NULL);
+
+				if(pml)
+					ret = PT_EPTCINIT;
+			} else {
 				ret = PT_EPTMUNLOCK;
+			}
 		}
 	} else {
 		ret = PT_EPTMLOCK;
@@ -57,13 +63,20 @@ enum pt_error
 fq_destroy(struct function_queue* q)
 {
 	enum pt_error ret = PT_SUCCESS;
-	int pmd = pthread_mutex_destroy(&q->lock);
+	int pmd = 0;
 
 	assert(q != NULL);
+	pmd = pthread_mutex_destroy(&q->lock);
 
 	if(pmd == 0) {
-		free((struct function_queue_element*) q->elements);
-		q->elements = NULL;
+		pmd = pthread_cond_destroy(&q->wait);
+
+		if(pmd == 0) {
+			free((struct function_queue_element*) q->elements);
+			q->elements = NULL;
+		} else {
+			ret = PT_EPTCDESTROY;
+		}
 	} else {
 		ret = PT_EPTMDESTROY;
 	}
