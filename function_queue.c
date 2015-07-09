@@ -85,7 +85,7 @@ fq_destroy(struct function_queue* q)
 }
 
 enum pt_error
-fq_push(struct function_queue* q, struct function_queue_element e, int block)
+fq_push(struct function_queue* q, void (*func)(void*), void* arg, int block)
 {
 	enum pt_error ret = PT_SUCCESS;
 	int pml = 0;
@@ -105,6 +105,10 @@ fq_push(struct function_queue* q, struct function_queue_element e, int block)
 		if(is_full != 0) { /* overflow */
 			ret = PT_EFQFULL;
 		} else {
+			struct function_queue_element e;
+
+			e.func = func;
+			e.arg = arg;
 			++q->size;
 
 			if(++q->back == q->max_elements)
