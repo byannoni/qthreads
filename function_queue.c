@@ -203,10 +203,11 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 	else
 		pml = pthread_mutex_trylock(&q->lock);
 
-	if(ret == 0) {
+	if(pml == 0) {
 		int is_empty = 0;
 
-		fq_is_empty(q, &is_empty);
+		/* fq_is_empty() always succeeds */
+		(void) fq_is_empty(q, &is_empty);
 
 		if(is_empty) {
 			if(block) {
@@ -219,7 +220,10 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 			}
 		}
 
-		/* NOTE: This cannot be an else because is_empty could change if we block */
+		/*
+		 * NOTE: This cannot be an else because is_empty could change
+		 * if we block.
+		 */
 		if(!is_empty) {
 			unsigned tmp = q->front + 1;
 
