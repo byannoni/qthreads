@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <pthread.h>
-#include <sched.h>
 #include <assert.h>
 
 #include "pt_error.h"
@@ -37,8 +36,6 @@ get_and_run(void* arg)
 	tq = arg;
 
 	do {
-		/* NOTE: no errors are defined for sched_yield() */
-		(void) sched_yield();
 		pthread_testcancel();
 
 		if(fq_pop(tq->fq, &fqe, 1) == PT_SUCCESS)
