@@ -20,19 +20,36 @@
 
 #include <pthread.h>
 
+#include "fq/indexed_array_queue.h"
+#include "function_queue_element.h"
 #include "pt_error.h"
 
-struct function_queue_element {
-	void (* func)(void*);
-	void* arg;
+enum fqtype {
+	FQTYPE_IA, /* indexed array */
+	FQTYPE_LAST /* not an actual type */
+};
+
+struct function_queue;
+
+struct fqdispatchtable {
+	enum pt_error (* init)(struct function_queue*, unsigned);
+	enum pt_error (* destroy)(struct function_queue*);
+	enum pt_error (* push)(struct function_queue*, void (*)(void*),
+			void*, int);
+	enum pt_error (* pop)(struct function_queue*,
+			struct function_queue_element*, int);
+	enum pt_error (* peek)(struct function_queue*,
+			struct function_queue_element*, int);
 };
 
 struct function_queue {
-	struct function_queue_element* elements;
+	union fqvariant {
+		struct fqindexedarray ia;
+	} queue;
+	const struct fqdispatchtable* dispatchtable;
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
-	unsigned int front;
-	unsigned int back;
+	enum fqtype type;
 	unsigned int max_elements;
 	unsigned int size;
 };
@@ -41,7 +58,7 @@ struct function_queue {
 extern "C" {
 #endif
 
-enum pt_error fq_init(struct function_queue*, unsigned);
+enum pt_error fq_init(struct function_queue*, enum fqtype, unsigned);
 enum pt_error fq_destroy(struct function_queue*);
 enum pt_error fq_push(struct function_queue*, void (*)(void*), void*, int);
 enum pt_error fq_pop(struct function_queue*, struct function_queue_element*,

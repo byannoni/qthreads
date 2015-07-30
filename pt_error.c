@@ -49,6 +49,7 @@ static struct {
 		"variable, check errno for more information" },
 	{ PT_EPTCDESTROY, "An error occurred while destroying a condition"
 		"variable, check errno for more information" },
+	{ PT_EINVALID, "An invalid value was encountered" },
 };
 
 static char*

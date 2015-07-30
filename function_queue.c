@@ -24,38 +24,51 @@
 #include "pt_error.h"
 
 enum pt_error
-fq_init(struct function_queue* q, unsigned max_elements)
+fq_init(struct function_queue* q, enum fqtype type, unsigned max_elements)
 {
 	enum pt_error ret = PT_SUCCESS;
 	int pml = 0;
 
 	assert(q != NULL);
+	q->size = 0;
+	q->max_elements = max_elements;
+	q->type = type;
+
+	switch(q->type) {
+	case FQTYPE_IA:
+		q->dispatchtable = &fqdispatchtableia;
+		break;
+	case FQTYPE_LAST:
+		ret = PT_EINVALID;
+		goto end;
+	}
 
 	if((pml = pthread_mutex_init(&q->lock, NULL)) == 0) {
-		q->front = 0;
-		q->back = 0;
-		q->size = 0;
-		q->max_elements = max_elements;
-		q->elements = malloc(q->max_elements *
-				sizeof(struct function_queue_element));
+		if(pml == 0) {
+			pml = pthread_cond_init(&q->wait, NULL);
 
-		if(q->elements == NULL) {
-			ret = PT_EMALLOC;
-			pml = pthread_mutex_destroy(&q->lock);
-
-			if(pml == 0) {
-				pml = pthread_cond_init(&q->wait, NULL);
-
-				if(pml)
-					ret = PT_EPTCINIT;
+			if(pml) {
+				/* ignore more errors at this point */
+				(void) pthread_mutex_destroy(&q->lock);
+				ret = PT_EPTCINIT;
 			} else {
-				ret = PT_EPTMUNLOCK;
+				assert(q->dispatchtable->init != NULL);
+				ret = q->dispatchtable->init(q, max_elements);
+
+				if(ret != PT_SUCCESS) {
+					/* ignore more errors at this point */
+					(void) pthread_mutex_destroy(&q->lock);
+					(void) pthread_cond_destroy(&q->wait);
+				}
 			}
+		} else {
+			ret = PT_EPTMUNLOCK;
 		}
 	} else {
 		ret = PT_EPTMLOCK;
 	}
 
+end:
 	return ret;
 }
 
@@ -72,8 +85,9 @@ fq_destroy(struct function_queue* q)
 		pmd = pthread_cond_destroy(&q->wait);
 
 		if(pmd == 0) {
-			free((struct function_queue_element*) q->elements);
-			q->elements = NULL;
+			assert(q->dispatchtable != NULL);
+			assert(q->dispatchtable->destroy != NULL);
+			ret = q->dispatchtable->destroy(q);
 		} else {
 			ret = PT_EPTCDESTROY;
 		}
@@ -105,20 +119,17 @@ fq_push(struct function_queue* q, void (*func)(void*), void* arg, int block)
 		if(is_full != 0) { /* overflow */
 			ret = PT_EFQFULL;
 		} else {
-			struct function_queue_element e;
+			assert(q->dispatchtable != NULL);
+			assert(q->dispatchtable->push != NULL);
+			ret = q->dispatchtable->push(q, func, arg, block);
 
-			e.func = func;
-			e.arg = arg;
-			++q->size;
+			if(ret == PT_SUCCESS) {
+				++q->size;
 
-			if(++q->back == q->max_elements)
-				q->back = 0;
-
-			q->elements[q->back] = e;
-
-			/* Only signal if the queue was empty before */
-			if(q->size == 1)
-				(void) pthread_cond_signal(&q->wait);
+				/* Only signal if the queue was empty before */
+				if(q->size == 1)
+					(void) pthread_cond_signal(&q->wait);
+			}
 		}
 
 		pml = pthread_mutex_unlock(&q->lock);
@@ -165,14 +176,17 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 			}
 		}
 
-		/* NOTE: This cannot be an else because is_empty could change if we block */
+		/*
+		 * NOTE: This cannot be an else because is_empty could change if
+		 * we block
+		 * */
 		if(!is_empty) {
-			--q->size;
+			assert(q->dispatchtable != NULL);
+			assert(q->dispatchtable->pop != NULL);
+			ret = q->dispatchtable->pop(q, e, block);
 
-			if(++q->front == q->max_elements)
-				q->front = 0;
-
-			*e = q->elements[q->front];
+			if(ret == PT_SUCCESS)
+				--q->size;
 		}
 
 		pml = pthread_mutex_unlock(&q->lock);
@@ -225,12 +239,9 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 		 * if we block.
 		 */
 		if(!is_empty) {
-			unsigned tmp = q->front + 1;
-
-			if(tmp == q->max_elements)
-				tmp = 0;
-
-			*e = q->elements[tmp];
+			assert(q->dispatchtable != NULL);
+			assert(q->dispatchtable->peek != NULL);
+			ret = q->dispatchtable->peek(q, e, block);
 		}
 
 		pml = pthread_mutex_unlock(&q->lock);

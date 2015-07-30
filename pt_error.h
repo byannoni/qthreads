@@ -33,6 +33,7 @@ enum pt_error {
 	PT_EMALLOC,
 	PT_EPTCINIT,
 	PT_EPTCDESTROY,
+	PT_EINVALID,
 
 	PT_ELAST
 };
