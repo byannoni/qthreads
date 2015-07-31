@@ -89,29 +89,19 @@ tq_start(struct threading_queue* tq, int* started)
 
 	assert(tq != NULL);
 
-	if(started != NULL) {
+	if(started != NULL)
 		*started = 0;
 
-		for(i = 0; i < tq->max_threads; ++i) {
-			if(pthread_create(&tq->threads[i], NULL, get_and_run,
+	for(i = 0; i < tq->max_threads; ++i) {
+		if(pthread_create(&tq->threads[i], NULL, get_and_run,
 					tq) != 0) {
-				if(tq->start_errors.errors != NULL)
-					tq->start_errors.errors[i] = errno;
+			if(tq->start_errors.errors != NULL)
+				tq->start_errors.errors[i] = errno;
 
-				ret = PT_EPTCREATE;
-			} else {
+			ret = PT_EPTCREATE;
+		} else {
+			if(started != NULL)
 				++*started;
-			}
-		}
-	} else {
-		for(i = 0; i < tq->max_threads; ++i) {
-			if(pthread_create(&tq->threads[i], NULL, get_and_run, tq)
-					!= 0) {
-				if(tq->start_errors.errors != NULL)
-					tq->start_errors.errors[i] = errno;
-
-				ret = PT_EPTCREATE;
-			}
 		}
 	}
 
