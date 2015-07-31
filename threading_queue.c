@@ -17,6 +17,7 @@
 
 #include "threading_queue.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <pthread.h>
@@ -92,8 +93,8 @@ tq_start(struct threading_queue* tq, int* started)
 		*started = 0;
 
 		for(i = 0; i < tq->max_threads; ++i) {
-			if(pthread_create(&tq->threads[i], 0, get_and_run, tq)
-					!= 0) {
+			if(pthread_create(&tq->threads[i], NULL, get_and_run,
+					tq) != 0) {
 				if(tq->start_errors.errors != NULL)
 					tq->start_errors.errors[i] = errno;
 
@@ -104,7 +105,7 @@ tq_start(struct threading_queue* tq, int* started)
 		}
 	} else {
 		for(i = 0; i < tq->max_threads; ++i) {
-			if(pthread_create(&tq->threads[i], 0, get_and_run, tq)
+			if(pthread_create(&tq->threads[i], NULL, get_and_run, tq)
 					!= 0) {
 				if(tq->start_errors.errors != NULL)
 					tq->start_errors.errors[i] = errno;
