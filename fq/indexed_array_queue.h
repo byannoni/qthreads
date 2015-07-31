@@ -20,7 +20,6 @@
 
 #include <pthread.h>
 
-#include "../function_queue_element.h"
 #include "../function_queue.h"
 #include "../pt_error.h"
 

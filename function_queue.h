@@ -21,7 +21,6 @@
 #include <pthread.h>
 
 #include "fq/indexed_array_queue.h"
-#include "function_queue_element.h"
 #include "pt_error.h"
 
 enum fqtype {
@@ -30,6 +29,11 @@ enum fqtype {
 };
 
 struct function_queue;
+
+struct function_queue_element {
+	void (* func)(void*);
+	void* arg;
+};
 
 struct fqdispatchtable {
 	enum pt_error (* init)(struct function_queue*, unsigned);
