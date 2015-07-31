@@ -44,28 +44,24 @@ fq_init(struct function_queue* q, enum fqtype type, unsigned max_elements)
 	}
 
 	if((pml = pthread_mutex_init(&q->lock, NULL)) == 0) {
-		if(pml == 0) {
-			pml = pthread_cond_init(&q->wait, NULL);
+		pml = pthread_cond_init(&q->wait, NULL);
 
-			if(pml) {
+		if(pml) {
+			/* ignore more errors at this point */
+			(void) pthread_mutex_destroy(&q->lock);
+			ret = PT_EPTCINIT;
+		} else {
+			assert(q->dispatchtable->init != NULL);
+			ret = q->dispatchtable->init(q, max_elements);
+
+			if(ret != PT_SUCCESS) {
 				/* ignore more errors at this point */
 				(void) pthread_mutex_destroy(&q->lock);
-				ret = PT_EPTCINIT;
-			} else {
-				assert(q->dispatchtable->init != NULL);
-				ret = q->dispatchtable->init(q, max_elements);
-
-				if(ret != PT_SUCCESS) {
-					/* ignore more errors at this point */
-					(void) pthread_mutex_destroy(&q->lock);
-					(void) pthread_cond_destroy(&q->wait);
-				}
+				(void) pthread_cond_destroy(&q->wait);
 			}
-		} else {
-			ret = PT_EPTMUNLOCK;
 		}
 	} else {
-		ret = PT_EPTMLOCK;
+		ret = PT_EPTMINIT;
 	}
 
 end:

@@ -50,6 +50,7 @@ static struct {
 	{ PT_EPTCDESTROY, "An error occurred while destroying a condition"
 		"variable, check errno for more information" },
 	{ PT_EINVALID, "An invalid value was encountered" },
+	{ PT_EPTMINIT, "An error occurred while initializing the mutex" },
 };
 
 static char*
