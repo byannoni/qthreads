@@ -28,8 +28,8 @@
 static void*
 get_and_run(void* arg)
 {
-	struct threading_queue* tq = NULL;
 	struct function_queue_element fqe;
+	struct threading_queue* tq = NULL;
 
 	if(arg == NULL)
 		return NULL;
