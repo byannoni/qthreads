@@ -23,6 +23,11 @@
 #include "function_queue.h"
 #include "pt_error.h"
 
+static void release_mutex(void* m)
+{
+	(void) pthread_mutex_unlock((pthread_mutex_t*) m);
+}
+
 enum pt_error
 fq_init(struct function_queue* q, enum fqtype type, unsigned max_elements)
 {
@@ -163,10 +168,14 @@ fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
 
 		if(is_empty) {
 			if(block) {
+				pthread_cleanup_push(release_mutex, &q->lock);
+
 				do {
 					pthread_cond_wait(&q->wait, &q->lock);
 					fq_is_empty(q, &is_empty);
 				} while(is_empty);
+
+				pthread_cleanup_pop(0);
 			} else {
 				ret = PT_EFQEMPTY;
 			}
@@ -221,10 +230,14 @@ fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
 
 		if(is_empty) {
 			if(block) {
+				pthread_cleanup_push(release_mutex, &q->lock);
+
 				do {
 					pthread_cond_wait(&q->wait, &q->lock);
 					fq_is_empty(q, &is_empty);
 				} while(is_empty);
+
+				pthread_cleanup_pop(0);
 			} else {
 				ret = PT_EFQEMPTY;
 			}
