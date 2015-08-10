@@ -117,13 +117,16 @@ tq_stop(struct threading_queue* tq, int join)
 
 	assert(tq != NULL);
 
-	for(i = 0; i < tq->max_threads; ++i)
-		/* NOTE it is not a problem if pthread_cancel() fails */
-		(void) pthread_cancel(tq->threads[i]);
+	for(i = 0; i < tq->max_threads; ++i) {
+		int pc = pthread_cancel(tq->threads[i]);
 
-	if(join)
-		for(i = 0; i < tq->max_threads; ++i)
-			(void) pthread_join(tq->threads[i], NULL);
+		if(join) {
+			if(pc == 0)
+				(void) pthread_join(tq->threads[i], NULL);
+			else
+				(void) pthread_detach(tq->threads[i]);
+		}
+	}
 
 	return ret;
 }
