@@ -27,12 +27,12 @@ struct tq_start_errors_info {
 	size_t current;
 };
 
-struct threading_queue_startup_info {
+struct qtpool_startup_info {
 	struct function_queue* fq;
 	size_t max_threads;
 };
 
-struct threading_queue {
+struct qtpool {
 	struct tq_start_errors_info start_errors;
 	struct function_queue* fq;
 	pthread_t* threads;
@@ -43,12 +43,12 @@ struct threading_queue {
 extern "C" {
 #endif
 
-enum pt_error tq_init(struct threading_queue*,
-		struct threading_queue_startup_info* tqsi);
-enum pt_error tq_destroy(struct threading_queue*);
-enum pt_error tq_start(struct threading_queue*, int*);
-enum pt_error tq_stop(struct threading_queue*, int);
-enum pt_error tq_start_get_e(struct threading_queue*, size_t, int*);
+enum pt_error tq_init(struct qtpool*,
+		struct qtpool_startup_info* tqsi);
+enum pt_error tq_destroy(struct qtpool*);
+enum pt_error tq_start(struct qtpool*, int*);
+enum pt_error tq_stop(struct qtpool*, int);
+enum pt_error tq_start_get_e(struct qtpool*, size_t, int*);
 
 #ifdef __cplusplus
 }

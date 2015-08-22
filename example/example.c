@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include "../threading_queue.h"
+#include "../qtpool.h"
 
 static pthread_mutex_t printer = PTHREAD_MUTEX_INITIALIZER;
 
@@ -25,8 +25,8 @@ void my_puts2(void* arg)
 int main(int argc, char** argv)
 {
 	struct function_queue fq;
-	struct threading_queue_startup_info tqsi;
-	struct threading_queue tq;
+	struct qtpool_startup_info tqsi;
+	struct qtpool tq;
 	size_t threads = 4;
 	int i = 0;
 	int tqse[4];

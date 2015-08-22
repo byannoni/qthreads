@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "threading_queue.h"
+#include "qtpool.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +29,7 @@ static void*
 get_and_run(void* arg)
 {
 	struct function_queue_element fqe;
-	struct threading_queue* tq = NULL;
+	struct qtpool* tq = NULL;
 
 	if(arg == NULL)
 		return NULL;
@@ -46,7 +46,7 @@ get_and_run(void* arg)
 }
 
 enum pt_error
-tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
+tq_init(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 {
 	enum pt_error ret = PT_SUCCESS;
 	
@@ -73,7 +73,7 @@ tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
 }
 
 enum pt_error
-tq_destroy(struct threading_queue* tq)
+tq_destroy(struct qtpool* tq)
 {
 	assert(tq != NULL);
 	free(tq->start_errors.errors);
@@ -82,7 +82,7 @@ tq_destroy(struct threading_queue* tq)
 }
 
 enum pt_error
-tq_start(struct threading_queue* tq, int* started)
+tq_start(struct qtpool* tq, int* started)
 {
 	enum pt_error ret = PT_SUCCESS;
 	unsigned int i = 0;
@@ -110,7 +110,7 @@ tq_start(struct threading_queue* tq, int* started)
 
 
 enum pt_error
-tq_stop(struct threading_queue* tq, int join)
+tq_stop(struct qtpool* tq, int join)
 {
 	enum pt_error ret = PT_SUCCESS;
 	unsigned int i = 0;
@@ -132,7 +132,7 @@ tq_stop(struct threading_queue* tq, int join)
 }
 
 enum pt_error
-tq_start_get_e(struct threading_queue* tq, size_t n, int* out)
+tq_start_get_e(struct qtpool* tq, size_t n, int* out)
 {
 	enum pt_error ret = PT_SUCCESS;
 
