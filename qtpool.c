@@ -46,7 +46,7 @@ get_and_run(void* arg)
 }
 
 enum pt_error
-tq_init(struct qtpool* tq, struct qtpool_startup_info* tqsi)
+qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 {
 	enum pt_error ret = PT_SUCCESS;
 	
@@ -73,7 +73,7 @@ tq_init(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 }
 
 enum pt_error
-tq_destroy(struct qtpool* tq)
+qtdestroy(struct qtpool* tq)
 {
 	assert(tq != NULL);
 	free(tq->start_errors.errors);
@@ -82,7 +82,7 @@ tq_destroy(struct qtpool* tq)
 }
 
 enum pt_error
-tq_start(struct qtpool* tq, int* started)
+qtstart(struct qtpool* tq, int* started)
 {
 	enum pt_error ret = PT_SUCCESS;
 	unsigned int i = 0;
@@ -110,7 +110,7 @@ tq_start(struct qtpool* tq, int* started)
 
 
 enum pt_error
-tq_stop(struct qtpool* tq, int join)
+qtstop(struct qtpool* tq, int join)
 {
 	enum pt_error ret = PT_SUCCESS;
 	unsigned int i = 0;
@@ -132,7 +132,7 @@ tq_stop(struct qtpool* tq, int join)
 }
 
 enum pt_error
-tq_start_get_e(struct qtpool* tq, size_t n, int* out)
+qtstart_get_e(struct qtpool* tq, size_t n, int* out)
 {
 	enum pt_error ret = PT_SUCCESS;
 

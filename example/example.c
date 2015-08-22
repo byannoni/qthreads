@@ -35,10 +35,10 @@ int main(int argc, char** argv)
 	fq_init(&fq, FQTYPE_IA, 25);
 	tqsi.fq = &fq;
 	tqsi.max_threads = threads;
-	puts("tq_init");
-	tq_init(&tq, &tqsi);
+	puts("qtinit");
+	qtinit(&tq, &tqsi);
 	puts("start");
-	tq_start(&tq, tqse);
+	qtstart(&tq, tqse);
 	puts("pushing");
 
 	for(i = 0; i < 100; ++i) {
@@ -47,9 +47,9 @@ int main(int argc, char** argv)
 	}
 	
 	sleep(2);
-	tq_stop(&tq, 1);
+	qtstop(&tq, 1);
 	puts("stopped");
-	tq_destroy(&tq);
+	qtdestroy(&tq);
 	fq_destroy(&fq);
 	return 0;
 }

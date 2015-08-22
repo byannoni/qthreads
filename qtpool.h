@@ -22,7 +22,7 @@
 
 #include "function_queue.h"
 
-struct tq_start_errors_info {
+struct qtstart_errors_info {
 	int* errors;
 	size_t current;
 };
@@ -33,7 +33,7 @@ struct qtpool_startup_info {
 };
 
 struct qtpool {
-	struct tq_start_errors_info start_errors;
+	struct qtstart_errors_info start_errors;
 	struct function_queue* fq;
 	pthread_t* threads;
 	size_t max_threads;
@@ -43,12 +43,12 @@ struct qtpool {
 extern "C" {
 #endif
 
-enum pt_error tq_init(struct qtpool*,
+enum pt_error qtinit(struct qtpool*,
 		struct qtpool_startup_info* tqsi);
-enum pt_error tq_destroy(struct qtpool*);
-enum pt_error tq_start(struct qtpool*, int*);
-enum pt_error tq_stop(struct qtpool*, int);
-enum pt_error tq_start_get_e(struct qtpool*, size_t, int*);
+enum pt_error qtdestroy(struct qtpool*);
+enum pt_error qtstart(struct qtpool*, int*);
+enum pt_error qtstop(struct qtpool*, int);
+enum pt_error qtstart_get_e(struct qtpool*, size_t, int*);
 
 #ifdef __cplusplus
 }
