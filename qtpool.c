@@ -39,7 +39,7 @@ get_and_run(void* arg)
 	do {
 		pthread_testcancel();
 
-		if(fq_pop(tq->fq, &fqe, 1) == PT_SUCCESS)
+		if(fqpop(tq->fq, &fqe, 1) == PT_SUCCESS)
 			fqe.func(fqe.arg);
 
 	} while(1);

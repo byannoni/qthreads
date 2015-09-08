@@ -62,15 +62,15 @@ struct function_queue {
 extern "C" {
 #endif
 
-enum pt_error fq_init(struct function_queue*, enum fqtype, unsigned);
-enum pt_error fq_destroy(struct function_queue*);
-enum pt_error fq_push(struct function_queue*, void (*)(void*), void*, int);
-enum pt_error fq_pop(struct function_queue*, struct function_queue_element*,
+enum pt_error fqinit(struct function_queue*, enum fqtype, unsigned);
+enum pt_error fqdestroy(struct function_queue*);
+enum pt_error fqpush(struct function_queue*, void (*)(void*), void*, int);
+enum pt_error fqpop(struct function_queue*, struct function_queue_element*,
 		int);
-enum pt_error fq_peek(struct function_queue*, struct function_queue_element*,
+enum pt_error fqpeek(struct function_queue*, struct function_queue_element*,
 		int);
-enum pt_error fq_is_empty(struct function_queue*, int*);
-enum pt_error fq_is_full(struct function_queue*, int*);
+enum pt_error fqisempty(struct function_queue*, int*);
+enum pt_error fqisfull(struct function_queue*, int*);
 
 #ifdef __cplusplus
 }
