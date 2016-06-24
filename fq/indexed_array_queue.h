@@ -21,7 +21,7 @@
 #include <pthread.h>
 
 #include "../function_queue.h"
-#include "../pt_error.h"
+#include "../qterror.h"
 
 struct fqindexedarray {
 	struct function_queue_element* elements;

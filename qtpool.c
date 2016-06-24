@@ -23,7 +23,7 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include "pt_error.h"
+#include "qterror.h"
 
 static void*
 get_and_run(void* arg)
@@ -39,16 +39,16 @@ get_and_run(void* arg)
 	do {
 		pthread_testcancel();
 
-		if(fqpop(tq->fq, &fqe, 1) == PT_SUCCESS)
+		if(fqpop(tq->fq, &fqe, 1) == QTSUCCESS)
 			fqe.func(fqe.arg);
 
 	} while(1);
 }
 
-enum pt_error
+enum qterror
 qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 	
 	assert(tq != NULL);
 	assert(tqsi != NULL);
@@ -63,28 +63,28 @@ qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 
 		if(tq->start_errors.errors == NULL){
 			free(tq->threads);
-			ret = PT_EMALLOC;
+			ret = QTEMALLOC;
 		}
 	} else {
-		ret = PT_EMALLOC;
+		ret = QTEMALLOC;
 	}
 
 	return ret;
 }
 
-enum pt_error
+enum qterror
 qtdestroy(struct qtpool* tq)
 {
 	assert(tq != NULL);
 	free(tq->start_errors.errors);
 	free(tq->threads);
-	return PT_SUCCESS;
+	return QTSUCCESS;
 }
 
-enum pt_error
+enum qterror
 qtstart(struct qtpool* tq, int* started)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 	unsigned int i = 0;
 
 	assert(tq != NULL);
@@ -98,7 +98,7 @@ qtstart(struct qtpool* tq, int* started)
 			if(tq->start_errors.errors != NULL)
 				tq->start_errors.errors[i] = errno;
 
-			ret = PT_EPTCREATE;
+			ret = QTEPTCREATE;
 		} else {
 			if(started != NULL)
 				++*started;
@@ -109,10 +109,10 @@ qtstart(struct qtpool* tq, int* started)
 }
 
 
-enum pt_error
+enum qterror
 qtstop(struct qtpool* tq, int join)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 	unsigned int i = 0;
 
 	assert(tq != NULL);
@@ -131,10 +131,10 @@ qtstop(struct qtpool* tq, int join)
 	return ret;
 }
 
-enum pt_error
+enum qterror
 qtstart_get_e(struct qtpool* tq, size_t n, int* out)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 
 	assert(tq != NULL);
 	assert(out != NULL);
@@ -143,7 +143,7 @@ qtstart_get_e(struct qtpool* tq, size_t n, int* out)
 		*out = tq->start_errors.errors[n];
 	} else {
 		errno = EINVAL;
-		ret = PT_EERRNO;
+		ret = QTEERRNO;
 	}
 
 	return ret;

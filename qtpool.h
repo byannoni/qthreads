@@ -43,12 +43,12 @@ struct qtpool {
 extern "C" {
 #endif
 
-enum pt_error qtinit(struct qtpool*,
+enum qterror qtinit(struct qtpool*,
 		struct qtpool_startup_info* tqsi);
-enum pt_error qtdestroy(struct qtpool*);
-enum pt_error qtstart(struct qtpool*, int*);
-enum pt_error qtstop(struct qtpool*, int);
-enum pt_error qtstart_get_e(struct qtpool*, size_t, int*);
+enum qterror qtdestroy(struct qtpool*);
+enum qterror qtstart(struct qtpool*, int*);
+enum qterror qtstop(struct qtpool*, int);
+enum qterror qtstart_get_e(struct qtpool*, size_t, int*);
 
 #ifdef __cplusplus
 }
