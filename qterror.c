@@ -19,42 +19,42 @@
 #include <string.h>
 #include <errno.h>
 
-#include "pt_error.h"
+#include "qterror.h"
 
 static struct {
-	const enum pt_error err;
+	const enum qterror err;
 	const char* const str;
-} pt_error_map[PT_ELAST] = {
-	{ PT_SUCCESS, "Success" },
-	{ PT_EERRNO, "Check errno for more information" },
-	{ PT_EFQFULL, "The function queue was full" },
-	{ PT_EFQEMPTY, "The function queue was empty" },
-	{ PT_EPTMLOCK, "An error occurred while locking the mutex,"
+} qterror_map[QTELAST] = {
+	{ QTSUCCESS, "Success" },
+	{ QTEERRNO, "Check errno for more information" },
+	{ QTEFQFULL, "The function queue was full" },
+	{ QTEFQEMPTY, "The function queue was empty" },
+	{ QTEPTMLOCK, "An error occurred while locking the mutex,"
 		"check errno for more information" },
-	{ PT_EPTMTRYLOCK, "An error occurred while locking the mutex without"
+	{ QTEPTMTRYLOCK, "An error occurred while locking the mutex without"
 		"blocking, check errno for more information" },
-	{ PT_EPTMUNLOCK, "An error occurred while unlocking the mutex,"
+	{ QTEPTMUNLOCK, "An error occurred while unlocking the mutex,"
 		"check errno for more information" },
-	{ PT_EPTMAINIT, "An error occurred while initializing the mutex"
+	{ QTEPTMAINIT, "An error occurred while initializing the mutex"
 		"attributes" },
-	{ PT_EPTMDESTROY, "An error occurred while destroying a mutex,"
+	{ QTEPTMDESTROY, "An error occurred while destroying a mutex,"
 		"check errno for more information" },
-	{ PT_EPTONCE, "An error occurred during dynamic initialization," 
+	{ QTEPTONCE, "An error occurred during dynamic initialization," 
 		"check errno for more information" },
-	{ PT_EPTCREATE, "An error occurred while creating a thread,"
+	{ QTEPTCREATE, "An error occurred while creating a thread,"
 		"check errno for more information" },
-	{ PT_EMALLOC, "An error occurred while allocating memory,"
+	{ QTEMALLOC, "An error occurred while allocating memory,"
 		"check errno for more information" },
-	{ PT_EPTCINIT, "An error occurred while initializing a condition"
+	{ QTEPTCINIT, "An error occurred while initializing a condition"
 		"variable, check errno for more information" },
-	{ PT_EPTCDESTROY, "An error occurred while destroying a condition"
+	{ QTEPTCDESTROY, "An error occurred while destroying a condition"
 		"variable, check errno for more information" },
-	{ PT_EINVALID, "An invalid value was encountered" },
-	{ PT_EPTMINIT, "An error occurred while initializing the mutex" },
+	{ QTEINVALID, "An invalid value was encountered" },
+	{ QTEPTMINIT, "An error occurred while initializing the mutex" },
 };
 
 static char*
-pt_strncpy(char* dst, const char* src, size_t n)
+qtstrncpy(char* dst, const char* src, size_t n)
 {
 	size_t len = 0;
 
@@ -74,16 +74,16 @@ pt_strncpy(char* dst, const char* src, size_t n)
 }
 
 int
-pt_strerror_r(enum pt_error err, char* buf, size_t len)
+qtstrerror_r(enum qterror err, char* buf, size_t len)
 {
 	int ret = 0;
 
 	if(len > 0) {
-		if(err < PT_ELAST && err >= PT_SUCCESS) {
-			assert(err == pt_error_map[err].err);
-			(void) pt_strncpy(buf, pt_error_map[err].str, len - 1);
+		if(err < QTELAST && err >= QTSUCCESS) {
+			assert(err == qterror_map[err].err);
+			(void) qtstrncpy(buf, qterror_map[err].str, len - 1);
 
-			if(strlen(pt_error_map[err].str) >= len - 2) {
+			if(strlen(qterror_map[err].str) >= len - 2) {
 				errno = ERANGE;
 				ret = 1;
 			}

@@ -22,15 +22,15 @@
 
 #include "../function_queue.h"
 #include "indexed_array_queue.h"
-#include "../pt_error.h"
+#include "../qterror.h"
 
-static enum pt_error fqinitia(struct function_queue*, unsigned);
-static enum pt_error fqdestroyia(struct function_queue*);
-static enum pt_error fqpushia(struct function_queue*, void (*)(void*), void*,
+static enum qterror fqinitia(struct function_queue*, unsigned);
+static enum qterror fqdestroyia(struct function_queue*);
+static enum qterror fqpushia(struct function_queue*, void (*)(void*), void*,
 		int);
-static enum pt_error fqpopia(struct function_queue*,
+static enum qterror fqpopia(struct function_queue*,
 		struct function_queue_element*, int);
-static enum pt_error fqpeekia(struct function_queue*,
+static enum qterror fqpeekia(struct function_queue*,
 		struct function_queue_element*, int);
 
 const struct fqdispatchtable fqdispatchtableia = {
@@ -41,10 +41,10 @@ const struct fqdispatchtable fqdispatchtableia = {
 	fqpeekia
 };
 
-static enum pt_error
+static enum qterror
 fqinitia(struct function_queue* q, unsigned max_elements)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 
 	/* suppress unused variable warning */
 	(void) max_elements;
@@ -56,15 +56,15 @@ fqinitia(struct function_queue* q, unsigned max_elements)
 			sizeof(*q->queue.ia.elements));
 
 	if(q->queue.ia.elements == NULL)
-		ret = PT_EMALLOC;
+		ret = QTEMALLOC;
 
 	return ret;
 }
 
-static enum pt_error
+static enum qterror
 fqdestroyia(struct function_queue* q)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 
 	assert(q != NULL);
 	free((struct function_queue_element*) q->queue.ia.elements);
@@ -73,11 +73,11 @@ fqdestroyia(struct function_queue* q)
 	return ret;
 }
 
-static enum pt_error
+static enum qterror
 fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 {
 	struct function_queue_element e;
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 
 	/* suppress unused variable warning */
 	(void) block;
@@ -93,10 +93,10 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 	return ret;
 }
 
-static enum pt_error
+static enum qterror
 fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 
 	/* suppress unused variable warning */
 	(void) block;
@@ -111,10 +111,10 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 	return ret;
 }
 
-static enum pt_error
+static enum qterror
 fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 	unsigned int tmp = 0;
 
 	/* suppress unused variable warning */

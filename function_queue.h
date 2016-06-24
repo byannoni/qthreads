@@ -21,7 +21,7 @@
 #include <pthread.h>
 
 #include "fq/indexed_array_queue.h"
-#include "pt_error.h"
+#include "qterror.h"
 
 enum fqtype {
 	FQTYPE_IA, /* indexed array */
@@ -36,13 +36,13 @@ struct function_queue_element {
 };
 
 struct fqdispatchtable {
-	enum pt_error (* init)(struct function_queue*, unsigned);
-	enum pt_error (* destroy)(struct function_queue*);
-	enum pt_error (* push)(struct function_queue*, void (*)(void*),
+	enum qterror (* init)(struct function_queue*, unsigned);
+	enum qterror (* destroy)(struct function_queue*);
+	enum qterror (* push)(struct function_queue*, void (*)(void*),
 			void*, int);
-	enum pt_error (* pop)(struct function_queue*,
+	enum qterror (* pop)(struct function_queue*,
 			struct function_queue_element*, int);
-	enum pt_error (* peek)(struct function_queue*,
+	enum qterror (* peek)(struct function_queue*,
 			struct function_queue_element*, int);
 };
 
@@ -62,15 +62,15 @@ struct function_queue {
 extern "C" {
 #endif
 
-enum pt_error fq_init(struct function_queue*, enum fqtype, unsigned);
-enum pt_error fq_destroy(struct function_queue*);
-enum pt_error fq_push(struct function_queue*, void (*)(void*), void*, int);
-enum pt_error fq_pop(struct function_queue*, struct function_queue_element*,
+enum qterror fqinit(struct function_queue*, enum fqtype, unsigned);
+enum qterror fqdestroy(struct function_queue*);
+enum qterror fqpush(struct function_queue*, void (*)(void*), void*, int);
+enum qterror fqpop(struct function_queue*, struct function_queue_element*,
 		int);
-enum pt_error fq_peek(struct function_queue*, struct function_queue_element*,
+enum qterror fqpeek(struct function_queue*, struct function_queue_element*,
 		int);
-enum pt_error fq_is_empty(struct function_queue*, int*);
-enum pt_error fq_is_full(struct function_queue*, int*);
+enum qterror fqisempty(struct function_queue*, int*);
+enum qterror fqisfull(struct function_queue*, int*);
 
 #ifdef __cplusplus
 }

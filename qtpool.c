@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "threading_queue.h"
+#include "qtpool.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,13 +23,13 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include "pt_error.h"
+#include "qterror.h"
 
 static void*
 get_and_run(void* arg)
 {
 	struct function_queue_element fqe;
-	struct threading_queue* tq = NULL;
+	struct qtpool* tq = NULL;
 
 	if(arg == NULL)
 		return NULL;
@@ -39,16 +39,16 @@ get_and_run(void* arg)
 	do {
 		pthread_testcancel();
 
-		if(fq_pop(tq->fq, &fqe, 1) == PT_SUCCESS)
+		if(fqpop(tq->fq, &fqe, 1) == QTSUCCESS)
 			fqe.func(fqe.arg);
 
 	} while(1);
 }
 
-enum pt_error
-tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
+enum qterror
+qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 	
 	assert(tq != NULL);
 	assert(tqsi != NULL);
@@ -63,28 +63,28 @@ tq_init(struct threading_queue* tq, struct threading_queue_startup_info* tqsi)
 
 		if(tq->start_errors.errors == NULL){
 			free(tq->threads);
-			ret = PT_EMALLOC;
+			ret = QTEMALLOC;
 		}
 	} else {
-		ret = PT_EMALLOC;
+		ret = QTEMALLOC;
 	}
 
 	return ret;
 }
 
-enum pt_error
-tq_destroy(struct threading_queue* tq)
+enum qterror
+qtdestroy(struct qtpool* tq)
 {
 	assert(tq != NULL);
 	free(tq->start_errors.errors);
 	free(tq->threads);
-	return PT_SUCCESS;
+	return QTSUCCESS;
 }
 
-enum pt_error
-tq_start(struct threading_queue* tq, int* started)
+enum qterror
+qtstart(struct qtpool* tq, int* started)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 	unsigned int i = 0;
 
 	assert(tq != NULL);
@@ -98,7 +98,7 @@ tq_start(struct threading_queue* tq, int* started)
 			if(tq->start_errors.errors != NULL)
 				tq->start_errors.errors[i] = errno;
 
-			ret = PT_EPTCREATE;
+			ret = QTEPTCREATE;
 		} else {
 			if(started != NULL)
 				++*started;
@@ -109,10 +109,10 @@ tq_start(struct threading_queue* tq, int* started)
 }
 
 
-enum pt_error
-tq_stop(struct threading_queue* tq, int join)
+enum qterror
+qtstop(struct qtpool* tq, int join)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 	unsigned int i = 0;
 
 	assert(tq != NULL);
@@ -131,10 +131,10 @@ tq_stop(struct threading_queue* tq, int join)
 	return ret;
 }
 
-enum pt_error
-tq_start_get_e(struct threading_queue* tq, size_t n, int* out)
+enum qterror
+qtstart_get_e(struct qtpool* tq, size_t n, int* out)
 {
-	enum pt_error ret = PT_SUCCESS;
+	enum qterror ret = QTSUCCESS;
 
 	assert(tq != NULL);
 	assert(out != NULL);
@@ -143,7 +143,7 @@ tq_start_get_e(struct threading_queue* tq, size_t n, int* out)
 		*out = tq->start_errors.errors[n];
 	} else {
 		errno = EINVAL;
-		ret = PT_EERRNO;
+		ret = QTEERRNO;
 	}
 
 	return ret;

@@ -22,18 +22,18 @@
 
 #include "function_queue.h"
 
-struct tq_start_errors_info {
+struct qtstart_errors_info {
 	int* errors;
 	size_t current;
 };
 
-struct threading_queue_startup_info {
+struct qtpool_startup_info {
 	struct function_queue* fq;
 	size_t max_threads;
 };
 
-struct threading_queue {
-	struct tq_start_errors_info start_errors;
+struct qtpool {
+	struct qtstart_errors_info start_errors;
 	struct function_queue* fq;
 	pthread_t* threads;
 	size_t max_threads;
@@ -43,12 +43,12 @@ struct threading_queue {
 extern "C" {
 #endif
 
-enum pt_error tq_init(struct threading_queue*,
-		struct threading_queue_startup_info* tqsi);
-enum pt_error tq_destroy(struct threading_queue*);
-enum pt_error tq_start(struct threading_queue*, int*);
-enum pt_error tq_stop(struct threading_queue*, int);
-enum pt_error tq_start_get_e(struct threading_queue*, size_t, int*);
+enum qterror qtinit(struct qtpool*,
+		struct qtpool_startup_info* tqsi);
+enum qterror qtdestroy(struct qtpool*);
+enum qterror qtstart(struct qtpool*, int*);
+enum qterror qtstop(struct qtpool*, int);
+enum qterror qtstart_get_e(struct qtpool*, size_t, int*);
 
 #ifdef __cplusplus
 }

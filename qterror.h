@@ -15,31 +15,31 @@
  * limitations under the License.
  */
 
-#ifndef PT_ERROR_H
-#define PT_ERROR_H
+#ifndef QTERROR_H
+#define QTERROR_H
 
-enum pt_error {
-	PT_SUCCESS,
-	PT_EERRNO,
-	PT_EFQFULL,
-	PT_EFQEMPTY,
-	PT_EPTMLOCK,
-	PT_EPTMTRYLOCK,
-	PT_EPTMUNLOCK,
-	PT_EPTMAINIT,
-	PT_EPTMDESTROY,
-	PT_EPTONCE,
-	PT_EPTCREATE,
-	PT_EMALLOC,
-	PT_EPTCINIT,
-	PT_EPTCDESTROY,
-	PT_EINVALID,
-	PT_EPTMINIT,
+enum qterror {
+	QTSUCCESS,
+	QTEERRNO,
+	QTEFQFULL,
+	QTEFQEMPTY,
+	QTEPTMLOCK,
+	QTEPTMTRYLOCK,
+	QTEPTMUNLOCK,
+	QTEPTMAINIT,
+	QTEPTMDESTROY,
+	QTEPTONCE,
+	QTEPTCREATE,
+	QTEMALLOC,
+	QTEPTCINIT,
+	QTEPTCDESTROY,
+	QTEINVALID,
+	QTEPTMINIT,
 
-	PT_ELAST
+	QTELAST
 };
 
-int pt_strerror_r(enum pt_error, char*, size_t);
+int qtstrerror_r(enum qterror, char*, size_t);
 
 #endif
 
