@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
 	for(i = 0; i < 100; ++i) {
 		fq_push(&fq, i %3 ? my_puts2 : my_puts, (void*) i, 1);
-		printf("pushed %p with %p\n", e.arg, e.func);
+		printf("pushed %p with %p\n", i %3 ? my_puts2 : my_puts, (void*) i);
 	}
 	
 	sleep(2);

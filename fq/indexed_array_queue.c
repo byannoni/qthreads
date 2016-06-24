@@ -115,13 +115,14 @@ static enum qterror
 fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 {
 	enum qterror ret = QTSUCCESS;
-	unsigned int tmp = q->queue.ia.front + 1;
+	unsigned int tmp = 0;
 
 	/* suppress unused variable warning */
 	(void) block;
 
 	assert(q != NULL);
 	assert(e != NULL);
+	tmp = q->queue.ia.front + 1;
 
 	if(tmp == q->max_elements)
 		tmp = 0;
