@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,23 +76,21 @@ qtstrncpy(char* dst, const char* src, size_t n)
 int
 qtstrerror_r(enum qterror err, char* buf, size_t len)
 {
-	int ret = 0;
-
 	if(len > 0) {
-		if(err < QTELAST && err >= QTSUCCESS) {
-			assert(err == qterror_map[err].err);
-			(void) qtstrncpy(buf, qterror_map[err].str, len - 1);
-
-			if(strlen(qterror_map[err].str) >= len - 2) {
-				errno = ERANGE;
-				ret = 1;
-			}
-		} else {
+		if(err >= QTELAST || err < QTSUCCESS) {
 			errno = EINVAL;
-			ret = 1;
+			return 1;
+		}
+
+		assert(err == qterror_map[err].err);
+		(void) qtstrncpy(buf, qterror_map[err].str, len - 1);
+
+		if(strlen(qterror_map[err].str) >= len - 2) {
+			errno = ERANGE;
+			return 1;
 		}
 	}
 
-	return ret;
+	return 0;
 }
 
