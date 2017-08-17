@@ -3,7 +3,7 @@ qthreads
 A POSIX thread wrapper using queues of functions for C and C++.
 
 ### Status
-[![GitHub release](https://img.shields.io/github/release/byannoni/qthreads.svg)](https://github.com/byannoni/qthreads/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/byannoni/qthreads/all.svg)](https://github.com/byannoni/qthreads/releases/latest)
 [![GitHub tag](https://img.shields.io/github/tag/byannoni/qthreads.svg)](https://github.com/byannoni/qthreads/tags)
 [![Open Issues](https://img.shields.io/github/issues-raw/byannoni/qthreads.svg)](https://github.com/byannoni/qthreads/issues)
 
