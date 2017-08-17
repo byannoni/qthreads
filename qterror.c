@@ -29,26 +29,16 @@ static struct {
 	{ QTEERRNO, "Check errno for more information" },
 	{ QTEFQFULL, "The function queue was full" },
 	{ QTEFQEMPTY, "The function queue was empty" },
-	{ QTEPTMLOCK, "An error occurred while locking the mutex,"
-		"check errno for more information" },
-	{ QTEPTMTRYLOCK, "An error occurred while locking the mutex without"
-		"blocking, check errno for more information" },
-	{ QTEPTMUNLOCK, "An error occurred while unlocking the mutex,"
-		"check errno for more information" },
-	{ QTEPTMAINIT, "An error occurred while initializing the mutex"
-		"attributes" },
-	{ QTEPTMDESTROY, "An error occurred while destroying a mutex,"
-		"check errno for more information" },
-	{ QTEPTONCE, "An error occurred during dynamic initialization," 
-		"check errno for more information" },
-	{ QTEPTCREATE, "An error occurred while creating a thread,"
-		"check errno for more information" },
-	{ QTEMALLOC, "An error occurred while allocating memory,"
-		"check errno for more information" },
-	{ QTEPTCINIT, "An error occurred while initializing a condition"
-		"variable, check errno for more information" },
-	{ QTEPTCDESTROY, "An error occurred while destroying a condition"
-		"variable, check errno for more information" },
+	{ QTEPTMLOCK, "An error occurred while locking the mutex, check errno for more information" },
+	{ QTEPTMTRYLOCK, "An error occurred while locking the mutex without blocking, check errno for more information" },
+	{ QTEPTMUNLOCK, "An error occurred while unlocking the mutex, check errno for more information" },
+	{ QTEPTMAINIT, "An error occurred while initializing the mutex attributes" },
+	{ QTEPTMDESTROY, "An error occurred while destroying a mutex, check errno for more information" },
+	{ QTEPTONCE, "An error occurred during dynamic initialization, check errno for more information" },
+	{ QTEPTCREATE, "An error occurred while creating a thread, check errno for more information" },
+	{ QTEMALLOC, "An error occurred while allocating memory, check errno for more information" },
+	{ QTEPTCINIT, "An error occurred while initializing a condition variable, check errno for more information" },
+	{ QTEPTCDESTROY, "An error occurred while destroying a condition variable, check errno for more information" },
 	{ QTEINVALID, "An invalid value was encountered" },
 	{ QTEPTMINIT, "An error occurred while initializing the mutex" },
 };
