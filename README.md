@@ -5,9 +5,7 @@ A POSIX thread wrapper using queues of functions for C and C++.
 ### Status
 [![GitHub release](https://img.shields.io/github/release/byannoni/qthreads.svg)](https://github.com/byannoni/qthreads/releases/latest)
 [![GitHub tag](https://img.shields.io/github/tag/byannoni/qthreads.svg)](https://github.com/byannoni/qthreads/tags)
-
 [![Open Issues](https://img.shields.io/github/issues-raw/byannoni/qthreads.svg)](https://github.com/byannoni/qthreads/issues)
-[![Stories in Ready](https://badge.waffle.io/byannoni/qthreads.svg?label=ready&title=ready)](http://waffle.io/byannoni/qthreads)
 
 | Branch  | Status |
 | --- | --- |
