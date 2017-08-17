@@ -48,8 +48,6 @@ get_and_run(void* arg)
 enum qterror
 qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 {
-	enum qterror ret = QTSUCCESS;
-	
 	assert(tq != NULL);
 	assert(tqsi != NULL);
 
@@ -57,19 +55,18 @@ qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 	tq->max_threads = tqsi->max_threads;
 	tq->threads = malloc(tq->max_threads * sizeof(pthread_t));
 
-	if(tq->threads != NULL) {
-		tq->start_errors.current = 0;
-		tq->start_errors.errors = calloc(tq->max_threads, sizeof(int));
+	if(tq->threads == NULL)
+		return QTEMALLOC;
 
-		if(tq->start_errors.errors == NULL){
-			free(tq->threads);
-			ret = QTEMALLOC;
-		}
-	} else {
-		ret = QTEMALLOC;
+	tq->start_errors.current = 0;
+	tq->start_errors.errors = calloc(tq->max_threads, sizeof(int));
+
+	if(tq->start_errors.errors == NULL){
+		free(tq->threads);
+		return QTEMALLOC;
 	}
 
-	return ret;
+	return QTSUCCESS;
 }
 
 enum qterror
@@ -134,18 +131,15 @@ qtstop(struct qtpool* tq, int join)
 enum qterror
 qtstart_get_e(struct qtpool* tq, size_t n, int* out)
 {
-	enum qterror ret = QTSUCCESS;
-
 	assert(tq != NULL);
 	assert(out != NULL);
 
-	if(n < tq->max_threads) {
-		*out = tq->start_errors.errors[n];
-	} else {
+	if(n >= tq->max_threads) {
 		errno = EINVAL;
-		ret = QTEERRNO;
+		return QTEERRNO;
 	}
 
-	return ret;
+	*out = tq->start_errors.errors[n];
+	return QTSUCCESS;
 }
 

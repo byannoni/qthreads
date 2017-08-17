@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ enum qterror
 fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 {
 	enum qterror ret = QTSUCCESS;
-	int pml = 0;
 
 	assert(q != NULL);
 	q->size = 0;
@@ -44,105 +43,85 @@ fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 		q->dispatchtable = &fqdispatchtableia;
 		break;
 	case FQTYPE_LAST:
-		ret = QTEINVALID;
-		goto end;
+		return QTEINVALID;
 	}
 
-	if((pml = pthread_mutex_init(&q->lock, NULL)) == 0) {
-		pml = pthread_cond_init(&q->wait, NULL);
+	if(pthread_mutex_init(&q->lock, NULL) != 0)
+		return QTEPTMINIT;
 
-		if(pml) {
-			/* ignore more errors at this point */
-			(void) pthread_mutex_destroy(&q->lock);
-			ret = QTEPTCINIT;
-		} else {
-			assert(q->dispatchtable->init != NULL);
-			ret = q->dispatchtable->init(q, max_elements);
-
-			if(ret != QTSUCCESS) {
-				/* ignore more errors at this point */
-				(void) pthread_mutex_destroy(&q->lock);
-				(void) pthread_cond_destroy(&q->wait);
-			}
-		}
-	} else {
-		ret = QTEPTMINIT;
+	if(pthread_cond_init(&q->wait, NULL) != 0) {
+		/* ignore more errors at this point */
+		(void) pthread_mutex_destroy(&q->lock);
+		return QTEPTCINIT;
 	}
 
-end:
+	assert(q->dispatchtable->init != NULL);
+	ret = q->dispatchtable->init(q, max_elements);
+
+	if(ret != QTSUCCESS) {
+		/* ignore more errors at this point */
+		(void) pthread_mutex_destroy(&q->lock);
+		(void) pthread_cond_destroy(&q->wait);
+	}
+
 	return ret;
 }
 
 enum qterror
 fqdestroy(struct function_queue* q)
 {
-	enum qterror ret = QTSUCCESS;
-	int pmd = 0;
-
 	assert(q != NULL);
-	pmd = pthread_mutex_destroy(&q->lock);
 
-	if(pmd == 0) {
-		pmd = pthread_cond_destroy(&q->wait);
+	if(pthread_mutex_destroy(&q->lock) != 0)
+		return QTEPTMDESTROY;
 
-		if(pmd == 0) {
-			assert(q->dispatchtable != NULL);
-			assert(q->dispatchtable->destroy != NULL);
-			ret = q->dispatchtable->destroy(q);
-		} else {
-			ret = QTEPTCDESTROY;
-		}
-	} else {
-		ret = QTEPTMDESTROY;
-	}
+	if(pthread_cond_destroy(&q->wait) != 0)
+		return QTEPTCDESTROY;
 
-	return ret;
+	assert(q->dispatchtable != NULL);
+	assert(q->dispatchtable->destroy != NULL);
+	return q->dispatchtable->destroy(q);
 }
 
 enum qterror
 fqpush(struct function_queue* q, void (*func)(void*), void* arg, int block)
 {
 	enum qterror ret = QTSUCCESS;
-	int pml = 0;
+	int isfull = 0;
 
 	assert(q != NULL);
 
-	if(block != 0)
-		pml = pthread_mutex_lock(&q->lock);
-	else
-		pml = pthread_mutex_trylock(&q->lock);
-
-	if(pml == 0) {
-		int isfull = 0;
-
-		fqisfull(q, &isfull);
-
-		if(isfull != 0) { /* overflow */
-			ret = QTEFQFULL;
-		} else {
-			assert(q->dispatchtable != NULL);
-			assert(q->dispatchtable->push != NULL);
-			ret = q->dispatchtable->push(q, func, arg, block);
-
-			if(ret == QTSUCCESS) {
-				++q->size;
-
-				/* Only signal if the queue was empty before */
-				if(q->size == 1)
-					(void) pthread_cond_signal(&q->wait);
-			}
-		}
-
-		pml = pthread_mutex_unlock(&q->lock);
-
-		if(pml != 0)
-			ret = QTEPTMUNLOCK;
+	if(block) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
 	} else {
-		if(block == 0)
-			ret = QTEPTMTRYLOCK;
-		else
-			ret = QTEPTMLOCK;
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
 	}
+
+	(void) fqisfull(q, &isfull);
+
+	if(isfull != 0) { /* overflow */
+		ret = QTEFQFULL;
+		goto unlock_queue_mutex;
+	}
+
+	assert(q->dispatchtable != NULL);
+	assert(q->dispatchtable->push != NULL);
+	ret = q->dispatchtable->push(q, func, arg, block);
+
+	if(ret == QTSUCCESS) {
+		++q->size;
+
+		/* Only signal if the queue was empty before */
+		if(q->size == 1)
+			(void) pthread_cond_signal(&q->wait);
+	}
+
+unlock_queue_mutex:
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret != QTSUCCESS)
+			ret = QTEPTMUNLOCK;
 
 	return ret;
 }
@@ -151,59 +130,54 @@ enum qterror
 fqpop(struct function_queue* q, struct function_queue_element* e, int block)
 {
 	enum qterror ret = QTSUCCESS;
-	int pml = 0;
+	int isempty = 0;
 
 	assert(q != NULL);
 	assert(e != NULL);
 
-	if(block != 0)
-		pml = pthread_mutex_lock(&q->lock);
-	else
-		pml = pthread_mutex_trylock(&q->lock);
-
-	if(pml == 0) {
-		int isempty = 0;
-
-		fqisempty(q, &isempty);
-
-		if(isempty) {
-			if(block) {
-				pthread_cleanup_push(release_mutex, &q->lock);
-
-				do {
-					pthread_cond_wait(&q->wait, &q->lock);
-					fqisempty(q, &isempty);
-				} while(isempty);
-
-				pthread_cleanup_pop(0);
-			} else {
-				ret = QTEFQEMPTY;
-			}
-		}
-
-		/*
-		 * NOTE: This cannot be an else because isempty could change if
-		 * we block
-		 * */
-		if(!isempty) {
-			assert(q->dispatchtable != NULL);
-			assert(q->dispatchtable->pop != NULL);
-			ret = q->dispatchtable->pop(q, e, block);
-
-			if(ret == QTSUCCESS)
-				--q->size;
-		}
-
-		pml = pthread_mutex_unlock(&q->lock);
-
-		if(pml != 0)
-			ret = QTEPTMUNLOCK;
+	if(block) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
 	} else {
-		if(block == 0)
-			ret = QTEPTMTRYLOCK;
-		else
-			ret = QTEPTMLOCK;
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
 	}
+
+	fqisempty(q, &isempty);
+
+	if(isempty) {
+		if(!block) {
+			ret = QTEFQEMPTY;
+			goto unlock_queue_mutex;
+		}
+
+		pthread_cleanup_push(release_mutex, &q->lock);
+
+		do {
+			pthread_cond_wait(&q->wait, &q->lock);
+			fqisempty(q, &isempty);
+		} while(isempty);
+
+		pthread_cleanup_pop(0);
+	}
+
+	/*
+	 * NOTE: This cannot be an else because isempty could change if we
+	 * block.
+	 */
+	if(!isempty) {
+		assert(q->dispatchtable != NULL);
+		assert(q->dispatchtable->pop != NULL);
+		ret = q->dispatchtable->pop(q, e, block);
+
+		if(ret == QTSUCCESS)
+			--q->size;
+	}
+
+unlock_queue_mutex:
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret != QTSUCCESS)
+			ret = QTEPTMUNLOCK;
 
 	return ret;
 }
@@ -212,57 +186,52 @@ enum qterror
 fqpeek(struct function_queue* q, struct function_queue_element* e, int block)
 {
 	enum qterror ret = QTSUCCESS;
-	int pml = 0;
+	int isempty = 0;
 
 	assert(q != NULL);
 	assert(e != NULL);
 
-	if(block != 0)
-		pml = pthread_mutex_lock(&q->lock);
-	else
-		pml = pthread_mutex_trylock(&q->lock);
-
-	if(pml == 0) {
-		int isempty = 0;
-
-		/* fqisempty() always succeeds */
-		(void) fqisempty(q, &isempty);
-
-		if(isempty) {
-			if(block) {
-				pthread_cleanup_push(release_mutex, &q->lock);
-
-				do {
-					pthread_cond_wait(&q->wait, &q->lock);
-					fqisempty(q, &isempty);
-				} while(isempty);
-
-				pthread_cleanup_pop(0);
-			} else {
-				ret = QTEFQEMPTY;
-			}
-		}
-
-		/*
-		 * NOTE: This cannot be an else because isempty could change
-		 * if we block.
-		 */
-		if(!isempty) {
-			assert(q->dispatchtable != NULL);
-			assert(q->dispatchtable->peek != NULL);
-			ret = q->dispatchtable->peek(q, e, block);
-		}
-
-		pml = pthread_mutex_unlock(&q->lock);
-
-		if(pml != 0)
-			ret = QTEPTMUNLOCK;
+	if(block != 0) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
 	} else {
-		if(block == 0)
-			ret = QTEPTMTRYLOCK;
-		else
-			ret = QTEPTMLOCK;
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
 	}
+
+	/* fqisempty() always succeeds */
+	(void) fqisempty(q, &isempty);
+
+	if(isempty) {
+		if(!block) {
+			ret = QTEFQEMPTY;
+			goto unlock_queue_mutex;
+		}
+
+		pthread_cleanup_push(release_mutex, &q->lock);
+
+		do {
+			pthread_cond_wait(&q->wait, &q->lock);
+			fqisempty(q, &isempty);
+		} while(isempty);
+
+		pthread_cleanup_pop(0);
+	}
+
+	/*
+	 * NOTE: This cannot be an else because isempty could change if we
+	 * block.
+	 */
+	if(!isempty) {
+		assert(q->dispatchtable != NULL);
+		assert(q->dispatchtable->peek != NULL);
+		ret = q->dispatchtable->peek(q, e, block);
+	}
+
+unlock_queue_mutex:
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret == QTSUCCESS)
+			return QTEPTMUNLOCK;
 
 	return ret;
 }
@@ -270,22 +239,18 @@ fqpeek(struct function_queue* q, struct function_queue_element* e, int block)
 enum qterror
 fqisempty(struct function_queue* q, int* isempty)
 {
-	enum qterror ret = QTSUCCESS;
-
 	assert(q != NULL);
 	assert(isempty != NULL);
 	*isempty = q->size == 0;
-	return ret;
+	return QTSUCCESS;
 }
 
 enum qterror
 fqisfull(struct function_queue* q, int* isempty)
 {
-	enum qterror ret = QTSUCCESS;
-
 	assert(q != NULL);
 	assert(isempty != NULL);
 	*isempty = q->size == q->max_elements;
-	return ret;
+	return QTSUCCESS;
 }
 
