@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,36 @@
 
 #include "function_queue.h"
 
+/*
+ * This structure holds the list of errors which occurred durring the
+ * thread start up segment of qtstart(). The member errors is a pointer
+ * to the first elements of an array of errno values corresponding to
+ * the start status of each thread. The member current is unused.
+ */
 struct qtstart_errors_info {
 	int* errors;
 	size_t current;
 };
 
+/*
+ * This structure contains information for creating the thread pool. The
+ * member fq is a pointer to the function queue to use for the pool. The
+ * member max_threads the maximum number of threads to use in the pool.
+ */
 struct qtpool_startup_info {
 	struct function_queue* fq;
 	size_t max_threads;
 };
 
+/*
+ * This structure holds the actual pool information and data. The member
+ * start_errors holds information about the errors which occurred while
+ * the threads were starting. The member fq points to the function queue
+ * structure which the pool uses. The member threads holds the address
+ * of the array of threads which are used in the pool. The member
+ * max_threads is the maximum number of threads which will be started
+ * for the pool.
+ */
 struct qtpool {
 	struct qtstart_errors_info start_errors;
 	struct function_queue* fq;
