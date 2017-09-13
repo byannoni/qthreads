@@ -21,6 +21,11 @@
 
 #include "qterror.h"
 
+/*
+ * An array to contain valid error codes and corresponding descriptive
+ * strings. The member err contains the actual error code. The member
+ * str is a pointer to a constant string which describes the error.
+ */
 static struct {
 	const enum qterror err;
 	const char* const str;
@@ -43,6 +48,18 @@ static struct {
 	{ QTEPTMINIT, "An error occurred while initializing the mutex" },
 };
 
+/*
+ * Copy a string from src to dst.
+ *
+ * This procedure copies at most n characters from the buffer pointed to
+ * by src to the buffer pointed to by dst. The character after the last
+ * character copied is set to NUL unless the index of that character
+ * would be greater than n. In that case, the n-th character is set to
+ * NUL. The string dst is properly null-terminated unless the string src
+ * is empty or the variable n is 0. This procedure returns the value of
+ * dst. Neither the value of dst nor the value of src may be NULL. The
+ * buffer pointed to by src must be null-terminated.
+ */
 static char*
 qtstrncpy(char* dst, const char* src, size_t n)
 {
@@ -63,6 +80,16 @@ qtstrncpy(char* dst, const char* src, size_t n)
 	return dst;
 }
 
+/*
+ * Retrieve a string describing the given error code.
+ *
+ * This procedure copies at most len-1 bytes from the error description
+ * string in qterror_map which corresponds to the given error code into
+ * the buffer pointed to by buf. This procedure always succeeds and
+ * returns 0. The value of err must be a valid qterror value. The value
+ * of buf must not be NULL. If the buffer pointed to by buf is modified
+ * then it will be null-terminated.
+ */
 int
 qtstrerror_r(enum qterror err, char* buf, size_t len)
 {
