@@ -246,11 +246,11 @@ fqisempty(struct function_queue* q, int* isempty)
 }
 
 enum qterror
-fqisfull(struct function_queue* q, int* isempty)
+fqisfull(struct function_queue* q, int* isfull)
 {
 	assert(q != NULL);
-	assert(isempty != NULL);
-	*isempty = q->size == q->max_elements;
+	assert(isfull != NULL);
+	*isfull = q->size == q->max_elements;
 	return QTSUCCESS;
 }
 
