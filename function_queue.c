@@ -23,11 +23,24 @@
 #include "function_queue.h"
 #include "qterror.h"
 
-static void release_mutex(void* m)
+/*
+ * This procedure is a wrapper around the mutex unlock procedure so that
+ * the mutex can be unlocked in a cleanup handler. The variable m is a
+ * pointer to the mutex to unlock. The value of m must not be NULL.
+ */
+static void
+release_mutex(void* m)
 {
 	(void) pthread_mutex_unlock((pthread_mutex_t*) m);
 }
 
+/*
+ * This procedure initializes a function queue based on the given type.
+ * The variable max_elements is the maximum number of elements which can
+ * be stored in the queue. The variable type indicated which dispatch
+ * table to use for internal queue procedures. The procedure returns an
+ * error code to indicate its status. The value of q must not be NULL.
+ */
 enum qterror
 fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 {
@@ -67,6 +80,12 @@ fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 	return ret;
 }
 
+/*
+ * This procedure destroys the given queue. An attempt to use the object
+ * after destroying it results in undefined behavior. The object can be
+ * reinitialized by fqinit(). This procedure always succeeds. The value
+ * of q must not be NULL.
+ */
 enum qterror
 fqdestroy(struct function_queue* q)
 {
@@ -83,6 +102,13 @@ fqdestroy(struct function_queue* q)
 	return q->dispatchtable->destroy(q);
 }
 
+/*
+ * This procedure pushes the given function pointer onto the queue. The 
+ * function pointer is stored with the given argument arg so the value
+ * can be passed to it. This procedure may block if the value of block
+ * is non-zero. The procedure returns an error code to indicate its
+ * status. The value of q must not be NULL.
+ */
 enum qterror
 fqpush(struct function_queue* q, void (*func)(void*), void* arg, int block)
 {
@@ -126,6 +152,15 @@ unlock_queue_mutex:
 	return ret;
 }
 
+/*
+ * This procedure pops a function pointer from the queue. The function
+ * pointer and its information is stored in a function queue element.
+ * The value of this function queue element is copied to the address
+ * pointed to by the variable e and then removed from the queue. This
+ * procedure may block if the value of block is non-zero. The procedure
+ * returns an error code to indicate its status. The value of q must not
+ * be NULL. The value of e must not be NULL.
+ */
 enum qterror
 fqpop(struct function_queue* q, struct function_queue_element* e, int block)
 {
@@ -162,8 +197,8 @@ fqpop(struct function_queue* q, struct function_queue_element* e, int block)
 	}
 
 	/*
-	 * NOTE: This cannot be an else because isempty could change if we
-	 * block.
+	 * NOTE: This cannot be an else because isempty could change if
+	 * we block.
 	 */
 	if(!isempty) {
 		assert(q->dispatchtable != NULL);
@@ -182,6 +217,15 @@ unlock_queue_mutex:
 	return ret;
 }
 
+/*
+ * This procedure peeks at a function pointer from the queue. The
+ * function pointer and its information is stored in a function queue
+ * element. The value of this function queue element is copied to the
+ * address pointed to by the variable e. This procedure may block if the
+ * value of block is non-zero. The procedure returns an error code to
+ * indicate its status. The value of q must not be NULL. The value of e
+ * must not be NULL.
+ */
 enum qterror
 fqpeek(struct function_queue* q, struct function_queue_element* e, int block)
 {
@@ -219,8 +263,8 @@ fqpeek(struct function_queue* q, struct function_queue_element* e, int block)
 	}
 
 	/*
-	 * NOTE: This cannot be an else because isempty could change if we
-	 * block.
+	 * NOTE: This cannot be an else because isempty could change if
+	 * we block.
 	 */
 	if(!isempty) {
 		assert(q->dispatchtable != NULL);
@@ -236,6 +280,13 @@ unlock_queue_mutex:
 	return ret;
 }
 
+/*
+ * This procedure checks if the given queue is empty. It sets the value
+ * at the address pointed to by isempty to 0 if the queue is empty.
+ * Otherwise, it sets the value pointed to by isempty to non-zero. This
+ * procedure always succeeds. The value of q must not be NULL. The value
+ * of isempty must not be NULL.
+ */
 enum qterror
 fqisempty(struct function_queue* q, int* isempty)
 {
@@ -245,6 +296,13 @@ fqisempty(struct function_queue* q, int* isempty)
 	return QTSUCCESS;
 }
 
+/*
+ * This procedure checks if the given queue is full. It sets the value
+ * at the address pointed to by isfull to 0 if the queue is full.
+ * Otherwise, it sets the value pointed to by isfull to non-zero. This
+ * procedure always succeeds. The value of q must not be NULL. The value
+ * of isfull must not be NULL.
+ */
 enum qterror
 fqisfull(struct function_queue* q, int* isfull)
 {
