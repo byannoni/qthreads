@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@
 #include "fq/indexed_array_queue.h"
 #include "qterror.h"
 
+/*
+ * This contains the constants which describe the type and
+ * implementation of a function queue. FQTYPE_LAST is not a real type,
+ * but a marker of the final constant.
+ */
 enum fqtype {
 	FQTYPE_IA, /* indexed array */
 	FQTYPE_LAST /* not an actual type */
@@ -30,11 +35,25 @@ enum fqtype {
 
 struct function_queue;
 
+/*
+ * This stucture holds a function pointer func and a corresponding
+ * argument arg. Through this, a procedure can be "bound" to an argument
+ * for when it is called.
+ */
 struct function_queue_element {
 	void (* func)(void*);
 	void* arg;
 };
 
+/*
+ * This structure holds a dispatch table of procedures which correspond
+ * to the functionality of a queue. The init member is for any
+ * initialization which may be necessary for the queue. The destroy
+ * member should clean up any resources which were in use. The push, pop
+ * and peek procedures should provide their expected functionality.
+ * The procedures which these members point to should not interact with
+ * any member of the function queue object except the member queue.
+ */
 struct fqdispatchtable {
 	enum qterror (* init)(struct function_queue*, unsigned);
 	enum qterror (* destroy)(struct function_queue*);
@@ -47,15 +66,18 @@ struct fqdispatchtable {
 };
 
 struct function_queue {
-	union fqvariant {
-		struct fqindexedarray ia;
+	union fqvariant { /* union types of queue data */
+		struct fqindexedarray ia; /* indexed array queue */
 	} queue;
+	/* table of procedures for manipulating the queue data */
 	const struct fqdispatchtable* dispatchtable;
+	/* lock for managing the thread safety of the queue data */
 	pthread_mutex_t lock;
+	/* condition variable for signaling full and empty events */
 	pthread_cond_t wait;
-	enum fqtype type;
-	unsigned int max_elements;
-	unsigned int size;
+	enum fqtype type; /* the type identifier of the queue */
+	unsigned int max_elements; /* the maximum size of the queue */
+	unsigned int size; /* the true size of the queue */
 };
 
 #ifdef __cplusplus

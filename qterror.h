@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,26 @@
 #ifndef QTERROR_H
 #define QTERROR_H
 
+/* An enum of error codes for use in qt* procedures */
 enum qterror {
-	QTSUCCESS,
-	QTEERRNO,
-	QTEFQFULL,
-	QTEFQEMPTY,
-	QTEPTMLOCK,
-	QTEPTMTRYLOCK,
-	QTEPTMUNLOCK,
-	QTEPTMAINIT,
-	QTEPTMDESTROY,
-	QTEPTONCE,
-	QTEPTCREATE,
-	QTEMALLOC,
-	QTEPTCINIT,
-	QTEPTCDESTROY,
-	QTEINVALID,
-	QTEPTMINIT,
+	QTSUCCESS, /* success */
+	QTEERRNO, /* an error occurred indicated by errno */
+	QTEFQFULL, /* the function queue was full */
+	QTEFQEMPTY, /* the function queue was empty */
+	QTEPTMLOCK, /* an error occurred in pthread_mutex_lock */
+	QTEPTMTRYLOCK, /* an error occurred in pthread_mutex_trylock */
+	QTEPTMUNLOCK, /* an error occurred in pthread_mutex_unlock */
+	QTEPTMAINIT, /* an error occurred in pthread_mutexattr_init */
+	QTEPTMDESTROY, /* an error occurred in pthread_mutex_destroy */
+	QTEPTONCE, /* an error occurred in pthread_once */
+	QTEPTCREATE, /* an error occurred in pthread_create */
+	QTEMALLOC, /* an error occurred in malloc */
+	QTEPTCINIT, /* an error occurred in pthread_cond_init */
+	QTEPTCDESTROY, /* an error occurred in pthread_cond_destroy */
+	QTEINVALID, /* an invalid value was encountered */
+	QTEPTMINIT, /*an error occurred in pthread_mutex_init */
 
-	QTELAST
+	QTELAST /* the last error code; not a valid error */
 };
 
 int qtstrerror_r(enum qterror, char*, size_t);

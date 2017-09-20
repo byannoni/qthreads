@@ -25,6 +25,12 @@
 
 #include "qterror.h"
 
+/*
+ * This procedure repeatedly retrives a function from the function queue
+ * and executes it. This runs until the calling thread is cancelled. The
+ * argument is a pointer to an initialized qtpool object. This procedure
+ * does not return unless the value of arg NULL.
+ */
 static void*
 get_and_run(void* arg)
 {
@@ -45,6 +51,12 @@ get_and_run(void* arg)
 	} while(1);
 }
 
+/*
+ * This procedure initializes the qtpool object tq using the startup
+ * information from tqsi. The procedure returns a qterror code to
+ * indicate its status. The value of tq must not be NULL. The value of
+ * tqsi must not be NULL.
+ */
 enum qterror
 qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 {
@@ -69,6 +81,12 @@ qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 	return QTSUCCESS;
 }
 
+/*
+ * This procedure destroys the given qtpool object. An attempt to use
+ * the object after destroying it results in undefined behavior. The
+ * object can be reinitialized by qtinit(). This procedure always
+ * succeeds. The value of tq must not be NULL.
+ */
 enum qterror
 qtdestroy(struct qtpool* tq)
 {
@@ -78,6 +96,13 @@ qtdestroy(struct qtpool* tq)
 	return QTSUCCESS;
 }
 
+/*
+ * This procedure starts the threads for the given pool. The number of
+ * threads which start successfully is stored in the integer pointed to
+ * by started if the value of started is not NULL. This procedure
+ * returns an error code indicating its status. The value of tq must not
+ * be NULL.
+ */
 enum qterror
 qtstart(struct qtpool* tq, int* started)
 {
@@ -105,7 +130,14 @@ qtstart(struct qtpool* tq, int* started)
 	return ret;
 }
 
-
+/*
+ * This procedure stops the threads in a given pool. The threads are
+ * stopped by canceling them. If the value of join is not zero, the
+ * threads are joined and the procedure blocks until all the threads
+ * have terminated. Otherwise, the threads are detached and the
+ * procedure does not block. This procedure always succeeds. The value
+ * of tq must not be NULL. 
+ */
 enum qterror
 qtstop(struct qtpool* tq, int join)
 {
@@ -128,6 +160,13 @@ qtstop(struct qtpool* tq, int join)
 	return ret;
 }
 
+/*
+ * This procedure retrieves an errno value corresponding to the status
+ * of the status of the creation of the thread of the given index n.
+ * The value is then stored at the address pointed to by out. This
+ * procedure returns an error code indicating its status. The value of
+ * tq must not be NULL. The value of out must not be NULL.
+ */
 enum qterror
 qtstart_get_e(struct qtpool* tq, size_t n, int* out)
 {

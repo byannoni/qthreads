@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,17 @@
 #include "../function_queue.h"
 #include "../qterror.h"
 
+/*
+ * This structure is used to store the function queue elements and any
+ * persistant data necessary for the manipulation procedures.
+ */
 struct fqindexedarray {
+	/* a pointer to an element array */
 	struct function_queue_element* elements;
-	pthread_mutex_t lock;
-	pthread_cond_t wait;
-	unsigned int front;
-	unsigned int back;
+	pthread_mutex_t lock; /* unused */
+	pthread_cond_t wait; /* unused */
+	unsigned int front; /* the index of the "first" element */
+	unsigned int back; /* the index of the "last" element */
 };
 
 extern const struct fqdispatchtable fqdispatchtableia;

@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,10 @@ static enum qterror fqpopia(struct function_queue*,
 static enum qterror fqpeekia(struct function_queue*,
 		struct function_queue_element*, int);
 
+/*
+ * This is the function dispatch table for manipulating the queue in an
+ * implementation-agnostic way.
+ */
 const struct fqdispatchtable fqdispatchtableia = {
 	fqinitia,
 	fqdestroyia,
@@ -41,6 +45,12 @@ const struct fqdispatchtable fqdispatchtableia = {
 	fqpeekia
 };
 
+/*
+ * This procedure initializes the queue. The value of max_elements is
+ * the maximum number of elements which will fit in the queue. Memory is
+ * allocated for exactly that many elements. This procedure returns an
+ * error code indicating its status. The value of q must not be NULL.
+ */
 static enum qterror
 fqinitia(struct function_queue* q, unsigned max_elements)
 {
@@ -61,6 +71,12 @@ fqinitia(struct function_queue* q, unsigned max_elements)
 	return ret;
 }
 
+/*
+ * This procedure destroys the given queue. The memory for elements in
+ * the queue is freed. An attempt to use the object after it has been
+ * destoyed results in undefined behavior. This procedure returns an
+ * error code indicating its status. The value of q must not be NULL.
+ */
 static enum qterror
 fqdestroyia(struct function_queue* q)
 {
@@ -73,6 +89,12 @@ fqdestroyia(struct function_queue* q)
 	return ret;
 }
 
+/*
+ * This procedure pushes the given function pointer onto the queue. The 
+ * function pointer is stored with the given argument arg so the value
+ * can be passed to it. This procedure does not block. It returns an
+ * error code to indicate its status. The value of q must not be NULL.
+ */
 static enum qterror
 fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 {
@@ -93,6 +115,15 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 	return ret;
 }
 
+/*
+ * This procedure pops a function pointer from the queue. The function
+ * pointer and its information is stored in a function queue element.
+ * The value of this function queue element is copied to the address
+ * pointed to by the variable e and then removed from the queue. This
+ * procedure does not block. It returns an error code to indicate its
+ * status. The value of q must not be NULL. The value of e must not be
+ * NULL.
+ */
 static enum qterror
 fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 {
@@ -111,6 +142,14 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 	return ret;
 }
 
+/*
+ * This procedure peeks at a function pointer from the queue. The
+ * function pointer and its information is stored in a function queue
+ * element. The value of this function queue element is copied to the
+ * address pointed to by the variable e. This procedure does not block.
+ * The procedure returns an error code to indicate its status. The value
+ * of q must not be NULL. The value of e must not be NULL.
+ */
 static enum qterror
 fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 {
