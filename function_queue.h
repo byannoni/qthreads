@@ -21,6 +21,7 @@
 #include <pthread.h>
 
 #include "fq/indexed_array_queue.h"
+#include "function_queue_element.h"
 #include "qterror.h"
 
 /*
@@ -34,16 +35,6 @@ enum fqtype {
 };
 
 struct function_queue;
-
-/*
- * This stucture holds a function pointer func and a corresponding
- * argument arg. Through this, a procedure can be "bound" to an argument
- * for when it is called.
- */
-struct function_queue_element {
-	void (* func)(void*);
-	void* arg;
-};
 
 /*
  * This structure holds a dispatch table of procedures which correspond

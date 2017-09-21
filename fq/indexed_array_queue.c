@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <assert.h>
 
+#include "../function_queue_element.h"
 #include "../function_queue.h"
 #include "indexed_array_queue.h"
 #include "../qterror.h"
