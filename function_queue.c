@@ -24,6 +24,9 @@
 #include "function_queue.h"
 #include "qterror.h"
 
+#include "fq/indexed_array_queue.h"
+#include "fq/linked_list_queue.h"
+
 /*
  * This procedure is a wrapper around the mutex unlock procedure so that
  * the mutex can be unlocked in a cleanup handler. The variable m is a
