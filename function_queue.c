@@ -27,88 +27,9 @@
 #include "fq/indexed_array_queue.h"
 #include "fq/linked_list_queue.h"
 
-/*
- * This procedure is a wrapper around the mutex unlock procedure so that
- * the mutex can be unlocked in a cleanup handler. The variable m is a
- * pointer to the mutex to unlock. The value of m must not be NULL.
- */
-static void
-release_mutex(void* m)
-{
-	(void) pthread_mutex_unlock((pthread_mutex_t*) m);
-}
-
-/*
- * This procedure is a helper for peeking and poping a function queue.
- * The function pointer and its information is stored in a function
- * queue element. The value of this function queue element is copied to
- * the address pointed to by the variable e. It is removed from the
- * queue if the value of do_pop is non-zero. This procedure may block if
- * the value of block is non-zero. The procedure returns an error code
- * to indicate its status. The value of q must not be NULL. The value of
- * e must not be NULL.
- */
-static enum qterror
-peek_or_pop(struct function_queue* q, struct function_queue_element* e,
-		int block, int do_pop)
-{
-	volatile enum qterror ret = QTSUCCESS;
-	int isempty = 0;
-
-	assert(q != NULL);
-	assert(e != NULL);
-
-	if(block) {
-		if(pthread_mutex_lock(&q->lock) != 0)
-			return QTEPTMLOCK;
-	} else {
-		if(pthread_mutex_trylock(&q->lock) != 0)
-			return QTEPTMTRYLOCK;
-	}
-
-	(void) fqisempty(q, &isempty);
-
-	if(isempty) {
-		if(!block) {
-			ret = QTEFQEMPTY;
-			goto unlock_queue_mutex;
-		}
-
-		pthread_cleanup_push(release_mutex, &q->lock);
-
-		do {
-			pthread_cond_wait(&q->wait, &q->lock);
-			fqisempty(q, &isempty);
-		} while(isempty);
-
-		pthread_cleanup_pop(0);
-	}
-
-	/*
-	 * NOTE: This cannot be an else because isempty could change if
-	 * we block.
-	 */
-	if(!isempty) {
-		assert(q->dispatchtable != NULL);
-		assert(q->dispatchtable->pop != NULL);
-
-		if(do_pop) {
-			ret = q->dispatchtable->pop(q, e, block);
-
-			if(ret == QTSUCCESS)
-				--q->size;
-		} else {
-			ret = q->dispatchtable->peek(q, e, block);
-		}
-	}
-
-unlock_queue_mutex:
-	if(pthread_mutex_unlock(&q->lock) != 0)
-		if(ret != QTSUCCESS)
-			ret = QTEPTMUNLOCK;
-
-	return ret;
-}
+static void release_mutex(void*);
+static enum qterror peek_or_pop(struct function_queue*,
+		struct function_queue_element*, int, int);
 
 /*
  * This procedure initializes a function queue based on the given type.
@@ -297,5 +218,88 @@ fqisfull(struct function_queue* q, int* isfull)
 	assert(isfull != NULL);
 	*isfull = q->size == q->max_elements;
 	return QTSUCCESS;
+}
+
+/*
+ * This procedure is a wrapper around the mutex unlock procedure so that
+ * the mutex can be unlocked in a cleanup handler. The variable m is a
+ * pointer to the mutex to unlock. The value of m must not be NULL.
+ */
+static void
+release_mutex(void* m)
+{
+	(void) pthread_mutex_unlock((pthread_mutex_t*) m);
+}
+
+/*
+ * This procedure is a helper for peeking and poping a function queue.
+ * The function pointer and its information is stored in a function
+ * queue element. The value of this function queue element is copied to
+ * the address pointed to by the variable e. It is removed from the
+ * queue if the value of do_pop is non-zero. This procedure may block if
+ * the value of block is non-zero. The procedure returns an error code
+ * to indicate its status. The value of q must not be NULL. The value of
+ * e must not be NULL.
+ */
+static enum qterror
+peek_or_pop(struct function_queue* q, struct function_queue_element* e,
+		int block, int do_pop)
+{
+	volatile enum qterror ret = QTSUCCESS;
+	int isempty = 0;
+
+	assert(q != NULL);
+	assert(e != NULL);
+
+	if(block) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
+	} else {
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
+	}
+
+	(void) fqisempty(q, &isempty);
+
+	if(isempty) {
+		if(!block) {
+			ret = QTEFQEMPTY;
+			goto unlock_queue_mutex;
+		}
+
+		pthread_cleanup_push(release_mutex, &q->lock);
+
+		do {
+			pthread_cond_wait(&q->wait, &q->lock);
+			fqisempty(q, &isempty);
+		} while(isempty);
+
+		pthread_cleanup_pop(0);
+	}
+
+	/*
+	 * NOTE: This cannot be an else because isempty could change if
+	 * we block.
+	 */
+	if(!isempty) {
+		assert(q->dispatchtable != NULL);
+		assert(q->dispatchtable->pop != NULL);
+
+		if(do_pop) {
+			ret = q->dispatchtable->pop(q, e, block);
+
+			if(ret == QTSUCCESS)
+				--q->size;
+		} else {
+			ret = q->dispatchtable->peek(q, e, block);
+		}
+	}
+
+unlock_queue_mutex:
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret != QTSUCCESS)
+			ret = QTEPTMUNLOCK;
+
+	return ret;
 }
 
