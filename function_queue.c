@@ -56,6 +56,9 @@ fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 	case FQTYPE_IA:
 		q->dispatchtable = &fqdispatchtableia;
 		break;
+	case FQTYPE_LL:
+		q->dispatchtable = &fqdispatchtablell;
+		break;
 	case FQTYPE_LAST:
 		return QTEINVALID;
 	}

@@ -21,6 +21,7 @@
 #include <pthread.h>
 
 #include "fq/indexed_array_queue.h"
+#include "fq/linked_list_queue.h"
 #include "function_queue_element.h"
 #include "qterror.h"
 
@@ -31,6 +32,8 @@
  */
 enum fqtype {
 	FQTYPE_IA, /* indexed array */
+	FQTYPE_LL, /* linked list */
+
 	FQTYPE_LAST /* not an actual type */
 };
 
@@ -59,6 +62,7 @@ struct fqdispatchtable {
 struct function_queue {
 	union fqvariant { /* union types of queue data */
 		struct fqindexedarray ia; /* indexed array queue */
+		struct fqlinkedlist ll; /* indexed array queue */
 	} queue;
 	/* table of procedures for manipulating the queue data */
 	const struct fqdispatchtable* dispatchtable;
