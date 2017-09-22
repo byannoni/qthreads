@@ -22,72 +22,72 @@
 
 #include "../function_queue_element.h"
 #include "../function_queue.h"
-#include "indexed_array_queue.h"
+#include "linked_list_queue.h"
 #include "../qterror.h"
 
-static enum qterror fqinitia(struct function_queue*, unsigned);
-static enum qterror fqdestroyia(struct function_queue*);
-static enum qterror fqpushia(struct function_queue*, void (*)(void*), void*,
+static enum qterror fqinitll(struct function_queue*, unsigned);
+static enum qterror fqdestroyll(struct function_queue*);
+static enum qterror fqpushll(struct function_queue*, void (*)(void*), void*,
 		int);
-static enum qterror fqpopia(struct function_queue*,
+static enum qterror fqpopll(struct function_queue*,
 		struct function_queue_element*, int);
-static enum qterror fqpeekia(struct function_queue*,
+static enum qterror fqpeekll(struct function_queue*,
 		struct function_queue_element*, int);
 
 /*
  * This is the function dispatch table for manipulating the queue in an
  * implementation-agnostic way.
  */
-const struct fqdispatchtable fqdispatchtableia = {
-	fqinitia,
-	fqdestroyia,
-	fqpushia,
-	fqpopia,
-	fqpeekia
+const struct fqdispatchtable fqdispatchtablell = {
+	fqinitll,
+	fqdestroyll,
+	fqpushll,
+	fqpopll,
+	fqpeekll
 };
 
 /*
  * This procedure initializes the queue. The value of max_elements is
- * the maximum number of elements which will fit in the queue. Memory is
- * allocated for exactly that many elements. This procedure returns an
- * error code indicating its status. The value of q must not be NULL.
+ * the maximum number of elements which the queue will store. This
+ * procedure always succeeds. The value of q must not be NULL.
  */
 static enum qterror
-fqinitia(struct function_queue* q, unsigned max_elements)
+fqinitll(struct function_queue* q, unsigned max_elements)
 {
-	enum qterror ret = QTSUCCESS;
-
 	/* suppress unused variable warning */
 	(void) max_elements;
 
 	assert(q != NULL);
-	q->queue.ia.front = 0;
-	q->queue.ia.back = 0;
-	q->queue.ia.elements = malloc(q->max_elements *
-			sizeof(*q->queue.ia.elements));
+	q->queue.ll.head = NULL;
+	q->queue.ll.tail = NULL;
+	q->size = 0;
+	q->max_elements = max_elements;
 
-	if(q->queue.ia.elements == NULL)
-		ret = QTEMALLOC;
-
-	return ret;
+	return QTSUCCESS;
 }
 
 /*
  * This procedure destroys the given queue. The memory for elements in
  * the queue is freed. An attempt to use the object after it has been
- * destoyed results in undefined behavior. This procedure returns an
- * error code indicating its status. The value of q must not be NULL.
+ * destoyed results in undefined behavior. This procedure always
+ * succeeds. The value of q must not be NULL.
  */
 static enum qterror
-fqdestroyia(struct function_queue* q)
+fqdestroyll(struct function_queue* q)
 {
-	enum qterror ret = QTSUCCESS;
+	struct fqellnode* tmp = NULL;
 
 	assert(q != NULL);
-	free((struct function_queue_element*) q->queue.ia.elements);
-	q->queue.ia.elements = NULL;
+	tmp = q->queue.ll.head;
 
-	return ret;
+	while(tmp != NULL) {
+		struct fqellnode* next = q->queue.ll.head->next;
+
+		free(tmp);
+		tmp = next;
+	}
+
+	return QTSUCCESS;
 }
 
 /*
@@ -97,10 +97,10 @@ fqdestroyia(struct function_queue* q)
  * error code to indicate its status. The value of q must not be NULL.
  */
 static enum qterror
-fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
+fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
 {
 	struct function_queue_element e;
-	enum qterror ret = QTSUCCESS;
+	struct fqellnode* new_node = NULL;
 
 	/* suppress unused variable warning */
 	(void) block;
@@ -108,12 +108,25 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 	assert(q != NULL);
 	e.func = func;
 	e.arg = arg;
+	new_node = malloc(sizeof(struct fqellnode));
 
-	if(++q->queue.ia.back == q->max_elements)
-		q->queue.ia.back = 0;
+	if(new_node == NULL)
+		return QTEMALLOC;
 
-	q->queue.ia.elements[q->queue.ia.back] = e;
-	return ret;
+	new_node->element = e;
+	new_node->next = NULL;
+
+	if(q->queue.ll.tail == NULL) {
+		q->queue.ll.tail = new_node;
+	} else {
+		q->queue.ll.tail->next = new_node;
+		q->queue.ll.tail = q->queue.ll.tail->next;
+	}
+
+	if(q->queue.ll.head == NULL)
+		q->queue.ll.head = q->queue.ll.tail;
+
+	return QTSUCCESS;
 }
 
 /*
@@ -121,26 +134,28 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
  * pointer and its information is stored in a function queue element.
  * The value of this function queue element is copied to the address
  * pointed to by the variable e and then removed from the queue. This
- * procedure does not block. It returns an error code to indicate its
- * status. The value of q must not be NULL. The value of e must not be
- * NULL.
+ * procedure does not block. This procedure always succeeds. The value
+ * of q must not be NULL. The value of e must not be NULL.
  */
 static enum qterror
-fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
+fqpopll(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum qterror ret = QTSUCCESS;
+	struct fqellnode* tmp = NULL;
 
 	/* suppress unused variable warning */
 	(void) block;
 
 	assert(q != NULL);
 	assert(e != NULL);
+	*e = q->queue.ll.head->element;
+	tmp = q->queue.ll.head;
+	q->queue.ll.head = q->queue.ll.head->next;
+	free(tmp);
 
-	if(++q->queue.ia.front == q->max_elements)
-		q->queue.ia.front = 0;
+	if(q->queue.ll.head == NULL)
+		q->queue.ll.tail = NULL;
 
-	*e = q->queue.ia.elements[q->queue.ia.front];
-	return ret;
+	return QTSUCCESS;
 }
 
 /*
@@ -148,26 +163,19 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
  * function pointer and its information is stored in a function queue
  * element. The value of this function queue element is copied to the
  * address pointed to by the variable e. This procedure does not block.
- * The procedure returns an error code to indicate its status. The value
- * of q must not be NULL. The value of e must not be NULL.
+ * The procedure always succeeds. The value of q must not be NULL. The
+ * value of e must not be NULL.
  */
 static enum qterror
-fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
+fqpeekll(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum qterror ret = QTSUCCESS;
-	unsigned int tmp = 0;
-
 	/* suppress unused variable warning */
 	(void) block;
 
 	assert(q != NULL);
 	assert(e != NULL);
-	tmp = q->queue.ia.front + 1;
+	*e = q->queue.ll.head->element;
 
-	if(tmp == q->max_elements)
-		tmp = 0;
-
-	*e = q->queue.ia.elements[tmp];
-	return ret;
+	return QTSUCCESS;
 }
 

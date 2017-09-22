@@ -21,6 +21,8 @@
 #include <pthread.h>
 
 #include "fq/indexed_array_queue.h"
+#include "fq/linked_list_queue.h"
+#include "function_queue_element.h"
 #include "qterror.h"
 
 /*
@@ -30,20 +32,12 @@
  */
 enum fqtype {
 	FQTYPE_IA, /* indexed array */
+	FQTYPE_LL, /* linked list */
+
 	FQTYPE_LAST /* not an actual type */
 };
 
 struct function_queue;
-
-/*
- * This stucture holds a function pointer func and a corresponding
- * argument arg. Through this, a procedure can be "bound" to an argument
- * for when it is called.
- */
-struct function_queue_element {
-	void (* func)(void*);
-	void* arg;
-};
 
 /*
  * This structure holds a dispatch table of procedures which correspond
@@ -68,6 +62,7 @@ struct fqdispatchtable {
 struct function_queue {
 	union fqvariant { /* union types of queue data */
 		struct fqindexedarray ia; /* indexed array queue */
+		struct fqlinkedlist ll; /* indexed array queue */
 	} queue;
 	/* table of procedures for manipulating the queue data */
 	const struct fqdispatchtable* dispatchtable;

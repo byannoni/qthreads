@@ -20,8 +20,12 @@
 #include <pthread.h>
 #include <assert.h>
 
+#include "function_queue_element.h"
 #include "function_queue.h"
 #include "qterror.h"
+
+#include "fq/indexed_array_queue.h"
+#include "fq/linked_list_queue.h"
 
 /*
  * This procedure is a wrapper around the mutex unlock procedure so that
@@ -54,6 +58,9 @@ fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 	switch(q->type) {
 	case FQTYPE_IA:
 		q->dispatchtable = &fqdispatchtableia;
+		break;
+	case FQTYPE_LL:
+		q->dispatchtable = &fqdispatchtablell;
 		break;
 	case FQTYPE_LAST:
 		return QTEINVALID;

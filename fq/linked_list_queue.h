@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef INDEXED_ARRAY_QUEUE_H
-#define INDEXED_ARRAY_QUEUE_H
+#ifndef LINKED_LIST_QUEUE_H
+#define LINKED_LIST_QUEUE_H
 
 #include <pthread.h>
 
@@ -25,19 +25,24 @@
 #include "../qterror.h"
 
 /*
+ * This structure is a linked list node structure for function queue
+ * elements.
+ */
+struct fqellnode {
+	struct function_queue_element element; /* the element value */
+	struct fqellnode* next; /* the address of the next node */
+};
+
+/*
  * This structure is used to store the function queue elements and any
  * persistant data necessary for the manipulation procedures.
  */
-struct fqindexedarray {
-	/* a pointer to an element array */
-	struct function_queue_element* elements;
-	pthread_mutex_t lock; /* unused */
-	pthread_cond_t wait; /* unused */
-	unsigned int front; /* the index of the "first" element */
-	unsigned int back; /* the index of the "last" element */
+struct fqlinkedlist {
+	struct fqellnode* head; /* a pointer to the head of the list */
+	struct fqellnode* tail; /* a pointer to the tail of the list */
 };
 
-extern const struct fqdispatchtable fqdispatchtableia;
+extern const struct fqdispatchtable fqdispatchtablell;
 
 #endif
 
