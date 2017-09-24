@@ -171,7 +171,7 @@ unlock_queue_mutex:
 enum qterror
 fqpop(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum qterror ret = QTSUCCESS;
+	volatile enum qterror ret = QTSUCCESS;
 	int isempty = 0;
 
 	assert(q != NULL);
@@ -236,7 +236,7 @@ unlock_queue_mutex:
 enum qterror
 fqpeek(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum qterror ret = QTSUCCESS;
+	volatile enum qterror ret = QTSUCCESS;
 	int isempty = 0;
 
 	assert(q != NULL);
