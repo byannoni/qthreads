@@ -75,7 +75,7 @@ fqinitia(struct function_queue* q, unsigned max_elements)
 /*
  * This procedure destroys the given queue. The memory for elements in
  * the queue is freed. An attempt to use the object after it has been
- * destoyed results in undefined behavior. This procedure returns an
+ * destroyed results in undefined behavior. This procedure returns an
  * error code indicating its status. The value of q must not be NULL.
  */
 static enum qterror
