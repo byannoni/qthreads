@@ -55,8 +55,6 @@ const struct fqdispatchtable fqdispatchtableia = {
 static enum qterror
 fqinitia(struct function_queue* q, unsigned max_elements)
 {
-	enum qterror ret = QTSUCCESS;
-
 	/* suppress unused variable warning */
 	(void) max_elements;
 
@@ -67,9 +65,9 @@ fqinitia(struct function_queue* q, unsigned max_elements)
 			sizeof(*q->queue.ia.elements));
 
 	if(q->queue.ia.elements == NULL)
-		ret = QTEMALLOC;
+		return QTEMALLOC;
 
-	return ret;
+	return QTSUCCESS;
 }
 
 /*
@@ -81,13 +79,11 @@ fqinitia(struct function_queue* q, unsigned max_elements)
 static enum qterror
 fqdestroyia(struct function_queue* q)
 {
-	enum qterror ret = QTSUCCESS;
-
 	assert(q != NULL);
 	free((struct function_queue_element*) q->queue.ia.elements);
 	q->queue.ia.elements = NULL;
 
-	return ret;
+	return QTSUCCESS;
 }
 
 /*
@@ -100,7 +96,6 @@ static enum qterror
 fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 {
 	struct function_queue_element e;
-	enum qterror ret = QTSUCCESS;
 
 	/* suppress unused variable warning */
 	(void) block;
@@ -113,7 +108,7 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 		q->queue.ia.back = 0;
 
 	q->queue.ia.elements[q->queue.ia.back] = e;
-	return ret;
+	return QTSUCCESS;
 }
 
 /*
@@ -128,8 +123,6 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 static enum qterror
 fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum qterror ret = QTSUCCESS;
-
 	/* suppress unused variable warning */
 	(void) block;
 
@@ -140,7 +133,7 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 		q->queue.ia.front = 0;
 
 	*e = q->queue.ia.elements[q->queue.ia.front];
-	return ret;
+	return QTSUCCESS;
 }
 
 /*
@@ -154,7 +147,6 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 static enum qterror
 fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 {
-	enum qterror ret = QTSUCCESS;
 	unsigned int tmp = 0;
 
 	/* suppress unused variable warning */
@@ -168,6 +160,6 @@ fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 		tmp = 0;
 
 	*e = q->queue.ia.elements[tmp];
-	return ret;
+	return QTSUCCESS;
 }
 
