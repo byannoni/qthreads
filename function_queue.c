@@ -68,6 +68,7 @@ fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 		return QTEPTCINIT;
 	}
 
+	assert(q->dispatchtable != NULL);
 	assert(q->dispatchtable->init != NULL);
 	ret = q->dispatchtable->init(q, max_elements);
 
