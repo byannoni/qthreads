@@ -53,31 +53,19 @@ static struct {
  *
  * This procedure copies at most n characters from the buffer pointed to
  * by src to the buffer pointed to by dst. The character after the last
- * character copied is set to NUL unless the index of that character
- * would be greater than n. In that case, the n-th character is set to
- * NUL. The string dst is properly null-terminated unless the string src
- * is empty or the variable n is 0. This procedure returns the value of
- * dst. Neither the value of dst nor the value of src may be NULL. The
- * buffer pointed to by src must be null-terminated.
+ * character copied is set to NUL. The string dst is always properly
+ * null-terminated. This procedure returns the value of dst. Neither the
+ * value of dst nor the value of src may be NULL. The buffer pointed to
+ * by src must be null-terminated unless its length is n or less.
  */
 static char*
 qtstrncpy(char* dst, const char* src, size_t n)
 {
-	size_t len = 0;
-
 	assert(dst != NULL);
 	assert(src != NULL);
-	len = strlen(src);
 
-	if(len > n)
-		len = n;
-
-	if(len > 0) {
-		(void) memcpy(dst, src, len);
-		dst[len] = '\0';
-	}
-
-	return dst;
+	dst[0] = '\0';
+	return strncat(dst, src, n);
 }
 
 /*
