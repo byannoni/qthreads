@@ -141,7 +141,6 @@ qtstart(struct qtpool* tq, int* started)
 enum qterror
 qtstop(struct qtpool* tq, int join)
 {
-	enum qterror ret = QTSUCCESS;
 	unsigned int i = 0;
 
 	assert(tq != NULL);
@@ -157,7 +156,7 @@ qtstop(struct qtpool* tq, int join)
 		}
 	}
 
-	return ret;
+	return QTSUCCESS;
 }
 
 /*
@@ -173,10 +172,8 @@ qtstart_get_e(struct qtpool* tq, size_t n, int* out)
 	assert(tq != NULL);
 	assert(out != NULL);
 
-	if(n >= tq->max_threads) {
-		errno = EINVAL;
-		return QTEERRNO;
-	}
+	if(n >= tq->max_threads)
+		return QTEINVALID;
 
 	*out = tq->start_errors.errors[n];
 	return QTSUCCESS;
