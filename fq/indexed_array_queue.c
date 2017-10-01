@@ -185,6 +185,10 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 	(void) block;
 
 	assert(q != NULL);
+
+	if(len == q->size)
+		return QTSUCCESS;
+
 	new_array = malloc(len * sizeof(*new_array));
 
 	if(new_array == NULL)
