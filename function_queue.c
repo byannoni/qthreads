@@ -225,8 +225,6 @@ enum qterror
 fqresize(struct function_queue* q, unsigned int size, int block)
 {
 	enum qterror ret = QTSUCCESS;
-	unsigned old_size = 0;
-	unsigned old_max_elements = 0;
 
 	assert(q != NULL);
 
@@ -240,19 +238,12 @@ fqresize(struct function_queue* q, unsigned int size, int block)
 
 	assert(q->dispatchtable != NULL);
 	assert(q->dispatchtable->resize != NULL);
-	old_size = q->size;
-	old_max_elements = q->max_elements;
+	ret = q->dispatchtable->resize(q, size, block);
 
 	if(q->size > size)
 		q->size = size;
 
 	q->max_elements = size;
-	ret = q->dispatchtable->resize(q, size, block);
-
-	if(ret != QTSUCCESS) {
-		q->size = old_size;
-		q->max_elements = old_max_elements;
-	}
 
 	if(pthread_mutex_unlock(&q->lock) != 0)
 		if(ret != QTSUCCESS)
