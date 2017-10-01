@@ -33,7 +33,9 @@ static enum qterror fqpopll(struct function_queue*,
 		struct function_queue_element*, int);
 static enum qterror fqpeekll(struct function_queue*,
 		struct function_queue_element*, int);
+static enum qterror fqresizell(struct function_queue*, unsigned, int);
 
+static void fqellnode_trunc(struct fqellnode*);
 /*
  * This is the function dispatch table for manipulating the queue in an
  * implementation-agnostic way.
@@ -44,7 +46,7 @@ const struct fqdispatchtable fqdispatchtablell = {
 	fqpushll,
 	fqpopll,
 	fqpeekll,
-	NULL
+	fqresizell,
 };
 
 /*
@@ -76,23 +78,13 @@ fqinitll(struct function_queue* q, unsigned max_elements)
 static enum qterror
 fqdestroyll(struct function_queue* q)
 {
-	struct fqellnode* tmp = NULL;
-
 	assert(q != NULL);
-	tmp = q->queue.ll.head;
-
-	while(tmp != NULL) {
-		struct fqellnode* next = q->queue.ll.head->next;
-
-		free(tmp);
-		tmp = next;
-	}
-
+	fqellnode_trunc(q->queue.ll.head);
 	return QTSUCCESS;
 }
 
 /*
- * This procedure pushes the given function pointer onto the queue. The 
+ * This procedure pushes the given function pointer onto the queue. The
  * function pointer is stored with the given argument arg so the value
  * can be passed to it. This procedure does not block. It returns an
  * error code to indicate its status. The value of q must not be NULL.
@@ -178,5 +170,49 @@ fqpeekll(struct function_queue* q, struct function_queue_element* e, int block)
 	*e = q->queue.ll.head->element;
 
 	return QTSUCCESS;
+}
+
+/*
+ * This procedure changes the maximum number of elements allowed in the
+ * queue. It reallocates the elements array memory based on the new
+ * maximum value len. This procedure does not block. If the new length
+ * is not enough to store all the elements in the queue, the least
+ * recently added elements are removed. This procedure returns an error
+ * code indicating its status. The value of q must not be NULL.
+ */
+static enum qterror
+fqresizell(struct function_queue* q, unsigned int len, int block)
+{
+	struct fqellnode* tmp = NULL;
+	/* suppress unused variable warning */
+	(void) block;
+
+	assert(q != NULL);
+
+	if(len >= q->size)
+		return QTSUCCESS;
+
+	tmp = q->queue.ll.head;
+
+	while(len-- > 0 && tmp != NULL) {
+		tmp = tmp->next;
+	}
+
+	/* TODO implement NULL check here */
+	fqellnode_trunc(tmp->next);
+	tmp->next = NULL;
+	q->queue.ll.tail = tmp;
+	return QTSUCCESS;
+}
+
+static void
+fqellnode_trunc(struct fqellnode* node)
+{
+	while(node != NULL) {
+		struct fqellnode* next = node->next;
+
+		free(node);
+		node = next;
+	}
 }
 
