@@ -89,6 +89,7 @@ enum qterror fqpeek(struct function_queue*, struct function_queue_element*,
 		int);
 enum qterror fqisempty(struct function_queue*, int*);
 enum qterror fqisfull(struct function_queue*, int*);
+enum qterror fqresize(struct function_queue*, unsigned int, int);
 
 #ifdef __cplusplus
 }

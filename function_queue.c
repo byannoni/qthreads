@@ -221,6 +221,46 @@ fqisfull(struct function_queue* q, int* isfull)
 	return QTSUCCESS;
 }
 
+enum qterror
+fqresize(struct function_queue* q, unsigned int size, int block)
+{
+	enum qterror ret = QTSUCCESS;
+	unsigned old_size = 0;
+	unsigned old_max_elements = 0;
+
+	assert(q != NULL);
+
+	if(block) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
+	} else {
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
+	}
+
+	assert(q->dispatchtable != NULL);
+	assert(q->dispatchtable->resize != NULL);
+	old_size = q->size;
+	old_max_elements = q->max_elements;
+
+	if(q->size > size)
+		q->size = size;
+
+	q->max_elements = size;
+	ret = q->dispatchtable->resize(q, size, block);
+
+	if(ret != QTSUCCESS) {
+		q->size = old_size;
+		q->max_elements = old_max_elements;
+	}
+
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret != QTSUCCESS)
+			ret = QTEPTMUNLOCK;
+
+	return ret;
+}
+
 /*
  * This procedure is a wrapper around the mutex unlock procedure so that
  * the mutex can be unlocked in a cleanup handler. The variable m is a
