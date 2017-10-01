@@ -81,7 +81,7 @@ fqdestroyll(struct function_queue* q)
 	tmp = q->queue.ll.head;
 
 	while(tmp != NULL) {
-		struct fqellnode* next = q->queue.ll.head->next;
+		struct fqellnode* next = tmp->next;
 
 		free(tmp);
 		tmp = next;
