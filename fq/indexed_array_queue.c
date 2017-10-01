@@ -43,7 +43,8 @@ const struct fqdispatchtable fqdispatchtableia = {
 	fqdestroyia,
 	fqpushia,
 	fqpopia,
-	fqpeekia
+	fqpeekia,
+	NULL
 };
 
 /*

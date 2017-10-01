@@ -43,7 +43,8 @@ const struct fqdispatchtable fqdispatchtablell = {
 	fqdestroyll,
 	fqpushll,
 	fqpopll,
-	fqpeekll
+	fqpeekll,
+	NULL
 };
 
 /*
