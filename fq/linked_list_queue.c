@@ -198,7 +198,7 @@ fqresizell(struct function_queue* q, unsigned int len, int block)
 		tmp = tmp->next;
 	}
 
-	/* TODO implement NULL check here */
+	assert(tmp != NULL); /* this should never be possible */
 	fqellnode_trunc(tmp->next);
 	tmp->next = NULL;
 	q->queue.ll.tail = tmp;
