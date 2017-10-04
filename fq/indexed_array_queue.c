@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
+#include <string.h>
 
 #include "../function_queue_element.h"
 #include "../function_queue.h"
@@ -33,6 +34,7 @@ static enum qterror fqpopia(struct function_queue*,
 		struct function_queue_element*, int);
 static enum qterror fqpeekia(struct function_queue*,
 		struct function_queue_element*, int);
+static enum qterror fqresizeia(struct function_queue*, unsigned int, int);
 
 /*
  * This is the function dispatch table for manipulating the queue in an
@@ -43,7 +45,8 @@ const struct fqdispatchtable fqdispatchtableia = {
 	fqdestroyia,
 	fqpushia,
 	fqpopia,
-	fqpeekia
+	fqpeekia,
+	fqresizeia,
 };
 
 /*
@@ -160,6 +163,62 @@ fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 		tmp = 0;
 
 	*e = q->queue.ia.elements[tmp];
+	return QTSUCCESS;
+}
+
+/*
+ * This procedure changes the maximum number of elements allowed in the
+ * queue. It reallocates the elements array memory based on the new
+ * maximum value len. This procedure does not block. If the new length
+ * is not enough to store all the elements in the queue, the least
+ * recently added elements are removed. This procedure returns an error
+ * code indicating its status. The value of q must not be NULL.
+ */
+static enum qterror
+fqresizeia(struct function_queue* q, unsigned int len, int block)
+{
+	struct function_queue_element* new_array = NULL;
+	struct function_queue_element* old_array = NULL;
+	unsigned int real_front = 0;
+
+	/* suppress unused variable warning */
+	(void) block;
+
+	assert(q != NULL);
+
+	if(len == q->size)
+		return QTSUCCESS;
+
+	new_array = malloc(len * sizeof(*new_array));
+
+	if(new_array == NULL)
+		return QTEMALLOC;
+
+	real_front = q->queue.ia.front + 1;
+
+	if(real_front == q->max_elements)
+		real_front = 0;
+
+	if(q->queue.ia.back >= q->queue.ia.front) {
+		memcpy(new_array, &q->queue.ia.elements[real_front],
+				len * sizeof(*new_array));
+	} else if(q->queue.ia.back < q->queue.ia.front) {
+		size_t num_elements_to_copy1 =
+				len - q->queue.ia.front;
+		size_t num_elements_to_copy2 = len - num_elements_to_copy1;
+
+		memcpy(new_array, &q->queue.ia.elements[real_front],
+				num_elements_to_copy1 * sizeof(*new_array));
+		memcpy(&new_array[num_elements_to_copy1 + 1],
+				q->queue.ia.elements,
+				num_elements_to_copy2 * sizeof(*new_array));
+	}
+
+	q->queue.ia.front = len > 0 ? len - 1 : 0;
+	q->queue.ia.back = len > 0 ? len - 1 : 0;
+	old_array = q->queue.ia.elements;
+	q->queue.ia.elements = new_array;
+	free(old_array);
 	return QTSUCCESS;
 }
 
