@@ -31,8 +31,6 @@
 struct fqindexedarray {
 	/* a pointer to an element array */
 	struct function_queue_element* elements;
-	pthread_mutex_t lock; /* unused */
-	pthread_cond_t wait; /* unused */
 	unsigned int front; /* the index of the "first" element */
 	unsigned int back; /* the index of the "last" element */
 };
