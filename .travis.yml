@@ -5,15 +5,18 @@ compiler:
   - clang
 
 env:
-  - TARGET=debug
-  - TARGET=all
+  matrix:
+    - DEBUG=0
+    - DEBUG=1
 
 before_script:
   - if [ "$CC" = "gcc" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; sudo apt-get update -qq; sudo apt-get install -qq g++-4.8; export CC="gcc-4.8"; fi
 
 script:
-  - make $TARGET
+  - make all
+  - make test
 
 branches:
   except:
     - /^\d+-/
+

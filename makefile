@@ -1,17 +1,22 @@
 
-COBJS=threading_queue_c.o function_queue_c.o
+COBJS=qtpool.o function_queue.o qterror.o indexed_array_queue.o linked_list_queue.o
 CPPOBJS=function_queue_cpp.o threading_queue_cpp.o
 OBJS=$(COBJS) $(CPPOBJS)
-CPPFLAGS=-fpic -c -DNDEBUG
-CFLAGS=-fpic -c -DNDEBUG
-DFLAGS=-UNDEBUG -D_DEBUG -pedantic -g -Werror
+TESTEXECS=qterror_test
+CPPFLAGS=-fpic -DNDEBUG -D_XOPEN_SOURCE=500 -std=c++03 -O2 -Wpedantic -Wall -Wextra -Werror -Wformat=2 -Wparentheses -Wunused -Wuninitialized -Wstrict-aliasing -Wstrict-overflow=5 -Wfloat-equal -Wundef -Wshadow -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wsizeof-pointer-memaccess -Woverlength-strings -Wredundant-decls -Wdisabled-optimization -Wno-error=disabled-optimization
+CFLAGS=-fpic -DNDEBUG -D_XOPEN_SOURCE=500 -ansi -O2 -Wpedantic -Wall -Wextra -Werror -Wformat=2 -Wimplicit -Wparentheses -Wunused -Wuninitialized -Wstrict-aliasing -Wstrict-overflow=5 -Wfloat-equal -Wdeclaration-after-statement -Wundef -Wshadow -Wbad-function-cast -Wcast-qual -Wcast-align -Wwrite-strings -Wconversion -Wsizeof-pointer-memaccess -Waggregate-return -Wstrict-prototypes -Woverlength-strings -Wredundant-decls -Wnested-externs -Wc++-compat -Wno-error=c++-compat -Wmissing-prototypes -Wno-error=missing-prototypes -Wdisabled-optimization -Wno-error=disabled-optimization 
+DFLAGS=-UNDEBUG -ggdb -O0
 
 ifeq ($(CC),gcc)
-	DFLAGS+=-Wall -Wextra
+	CFLAGS+=-Wdouble-promotion -Wunsafe-loop-optimizations -Wc90-c99-compat -Wjump-misses-init -Wlogical-op -Wnormalized=nfc -Wunsuffixed-float-constants 
 else
 	ifeq ($(CC),clang)
-		DFLAGS+=-Weverything -Wno-padded
+		CFLAGS+=-Weverything -Wno-padded
 	endif
+endif
+
+ifeq ($(DEBUG),1)
+	CFLAGS+= $(DFLAGS)
 endif
 
 ifeq ($(OS),Windows_NT)
@@ -22,29 +27,39 @@ endif
 
 all : libqthread libqthread_cpp
 
-function_queue_c.o: function_queue.c function_queue.h
-	$(CC) $(CFLAGS) -o $@ $<
+indexed_array_queue.o: fq/indexed_array_queue.c fq/indexed_array_queue.h qterror.o
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-threading_queue_c.o: threading_queue.c threading_queue.h function_queue.h
-	$(CC) $(CFLAGS) -o $@ $<
+linked_list_queue.o: fq/linked_list_queue.c fq/linked_list_queue.h qterror.o
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+function_queue.o: function_queue.c function_queue.h qterror.o indexed_array_queue.o linked_list_queue.o
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+qtpool.o: qtpool.c qtpool.h function_queue.o qterror.o
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+qterror.o: qterror.c qterror.h
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 libqthread: $(OBJS)
 	ar rcs $@.a $^
 
-function_queue_cpp.o: function_queue.cpp function_queue.h
-	$(CXX) $(CPPFLAGS) -o $@ $<
+function_queue_cpp.o: function_queue.cpp function_queue.h function_queue.o
+	$(CXX) $(CPPFLAGS) -c -o $@ $<
 
-threading_queue_cpp.o: threading_queue.cpp threading_queue.h function_queue.h
-	$(CXX) $(CPPFLAGS) -o $@ $<
+threading_queue_cpp.o: threading_queue.cpp qtpool.h function_queue.h qtpool.o
+	$(CXX) $(CPPFLAGS) -c -o $@ $<
 
 libqthread_cpp: libqthread $(CPPOBJS)
 	ar rs $<.a $(CPPOBJS)
 
-debug : CFLAGS+= $(DFLAGS)
-debug : all
+test: test/qterror.c libqthread qterror.c qterror.c test/tinytest/tinytest.h
+	$(CC) -pthread -o qterror_test $<
+	$(foreach TEST,$(TESTEXECS),./$(TEST))
 
 : all
 
 clean:
-	$(RM) libqthread.a $(OBJS)
+	$(RM) libqthread.a libqthread_cpp.a $(OBJS) $(TESTEXECS)
 

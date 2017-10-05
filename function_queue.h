@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,46 +20,76 @@
 
 #include <pthread.h>
 
-#ifdef __cplusplus
-#include <stdexcept>
-#endif
+#include "fq/indexed_array_queue.h"
+#include "fq/linked_list_queue.h"
+#include "function_queue_element.h"
+#include "qterror.h"
 
-struct function_queue_element {
-	void (* func)(void*);
-	void* arg;
+/*
+ * This contains the constants which describe the type and
+ * implementation of a function queue. FQTYPE_LAST is not a real type,
+ * but a marker of the final constant.
+ */
+enum fqtype {
+	FQTYPE_IA, /* indexed array */
+	FQTYPE_LL, /* linked list */
+
+	FQTYPE_LAST /* not an actual type */
+};
+
+struct function_queue;
+
+/*
+ * This structure holds a dispatch table of procedures which correspond
+ * to the functionality of a queue. The init member is for any
+ * initialization which may be necessary for the queue. The destroy
+ * member should clean up any resources which were in use. The push, pop
+ * and peek procedures should provide their expected functionality.
+ * The procedures which these members point to should not interact with
+ * any member of the function queue object except the member queue.
+ */
+struct fqdispatchtable {
+	enum qterror (* init)(struct function_queue*, unsigned);
+	enum qterror (* destroy)(struct function_queue*);
+	enum qterror (* push)(struct function_queue*, void (*)(void*),
+			void*, int);
+	enum qterror (* pop)(struct function_queue*,
+			struct function_queue_element*, int);
+	enum qterror (* peek)(struct function_queue*,
+			struct function_queue_element*, int);
+	enum qterror (* resize)(struct function_queue*, unsigned int, int);
 };
 
 struct function_queue {
-	struct function_queue_element* elements;
+	union fqvariant { /* union types of queue data */
+		struct fqindexedarray ia; /* indexed array queue */
+		struct fqlinkedlist ll; /* indexed array queue */
+	} queue;
+	/* table of procedures for manipulating the queue data */
+	const struct fqdispatchtable* dispatchtable;
+	/* lock for managing the thread safety of the queue data */
 	pthread_mutex_t lock;
-	unsigned int front;
-	unsigned int back;
-	unsigned int max_elements;
-	unsigned int size;
-};
-
-/*
- * XXX
- * According to the C11 standard, this could conflict with implementation-
- * specific errno values. However, this case is very unlikely since all common
- * errno values are positive.
- */
-enum {
-	EMUTEXATTR_INIT = -1,
-	EMUTEXATTR_SETTYPE = -2
+	/* condition variable for signaling full and empty events */
+	pthread_cond_t wait;
+	enum fqtype type; /* the type identifier of the queue */
+	unsigned int max_elements; /* the maximum size of the queue */
+	unsigned int size; /* the true size of the queue */
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int fq_init(struct function_queue*, unsigned);
-int fq_destroy(struct function_queue*);
-int fq_push(struct function_queue*, struct function_queue_element, int);
-int fq_pop(struct function_queue*, struct function_queue_element*, int);
-int fq_peek(struct function_queue*, struct function_queue_element*, int);
-int fq_is_empty(struct function_queue*, int);
-int fq_is_full(struct function_queue*, int);
+enum qterror fqinit(struct function_queue*, enum fqtype, unsigned);
+enum qterror fqdestroy(struct function_queue*);
+enum qterror fqpush(struct function_queue*, void (*)(void*), void*, int);
+enum qterror fqpop(struct function_queue*, struct function_queue_element*,
+		int);
+enum qterror fqpeek(struct function_queue*, struct function_queue_element*,
+		int);
+enum qterror fqisempty(struct function_queue*, int*);
+enum qterror fqisfull(struct function_queue*, int*);
+enum qterror fqresize(struct function_queue*, unsigned int, int);
 
 #ifdef __cplusplus
 }
@@ -89,7 +119,6 @@ namespace fq {
 		bool is_full( int );
 	};
 }
-
 #endif
 #endif
 

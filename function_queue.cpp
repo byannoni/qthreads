@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <cstring>
 #include <string>
 
+#include "qterror.h"
 #include "function_queue.h"
 
 using namespace fq;
@@ -50,18 +51,17 @@ element( void (* function)( void* ), void* argument )
 }
 
 queue::
-queue( unsigned max_elements )
+queue(unsigned maximum_elements)
 {
-	int ret = fq_init( this, max_elements );
+	enum qterror ret = fqinit(this, FQTYPE_IA, maximum_elements);
 
-	if( ret ) {
-		if( ret == EMUTEXATTR_INIT ) {
-			throw_runtime_error( "error initializing mutex" );
-		} else if( ret == EMUTEXATTR_SETTYPE ) {
-			throw_runtime_error( "could not make mutex recursive" );
-		} else {
-			unhandled_errno( ret );
-		}
+	if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 }
 
@@ -69,10 +69,16 @@ void
 queue::
 destroy(void)
 {
-	int ret = fq_destroy( this );
+	enum qterror ret = fqdestroy(this);
 
-	if( ret )
-		unhandled_errno( ret );
+	if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
+	}
 }
 
 queue::
@@ -83,12 +89,17 @@ void
 queue::
 push( element& e, int block )
 {
-	int ret = fq_push( this, e, block );
+	enum qterror ret = fqpush(this, e.func, e.arg, block);
 
-	if( ret == ERANGE ) {
+	if(ret == QTEFQFULL) {
 		throw std::overflow_error( "function_queue: overflow" );
-	} else if( ret ) {
-		unhandled_errno( ret );
+	} else if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 }
 
@@ -97,12 +108,17 @@ queue::
 pop( int block )
 {
 	element e;
-	int ret = fq_pop( this, &e, block );
+	enum qterror ret = fqpop( this, &e, block );
 
-	if( ret == ERANGE ) {
+	if(ret == QTEFQEMPTY) {
 		throw std::underflow_error( "function_queue: underflow" );
-	} else if( ret ) {
-		unhandled_errno( ret );
+	} else if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 
 	return e;
@@ -113,12 +129,17 @@ queue::
 peek( int block )
 {
 	element e;
-	int ret = fq_peek( this, &e, block );
+	enum qterror ret = fqpeek( this, &e, block );
 
-	if( ret == ERANGE ) {
+	if(ret == ERANGE) {
 		throw std::underflow_error( "function_queue: underflow" );
-	} else if( ret ) {
-		unhandled_errno( ret );
+	} else if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 
 	return e;
@@ -128,25 +149,41 @@ bool
 queue::
 is_empty( int block )
 {
-	int ret = fq_is_empty( this, block );
+	int isempty = 0;
+	enum qterror ret = fqisempty(this, &isempty);
 
-	if( ret != 0 && ret != 1 ) {
-		unhandled_errno( ret );
+	(void) block;
+
+	if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 
-	return ret;
+	return isempty;
 }
 
 bool
 queue::
 is_full( int block )
 {
-	int ret = fq_is_full( this, block );
+	int isfull = 0;
+	enum qterror ret = fqisfull(this, &isfull);
 
-	if( ret != 0 && ret != 1 ) {
-		unhandled_errno( ret );
+	(void) block;
+
+	if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 
-	return ret;
+	return isfull;
 }
 

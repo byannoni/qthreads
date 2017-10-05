@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@
 #include <cstring>
 #include <string>
 
-#include "threading_queue.h"
+#include "qtpool.h"
+#include "qterror.h"
 
 using namespace tq;
 
@@ -39,12 +40,17 @@ unhandled_errno( int err )
 }
 
 queue::
-queue( threading_queue_startup_info& tqsi )
+queue(qtpool_startup_info& tqsi)
 {
-	int ret = tq_init( this, &tqsi );
+	enum qterror ret = qtinit(this, &tqsi);
 
-	if( ret ) {
-		unhandled_errno( ret );
+	if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 }
 
@@ -56,7 +62,7 @@ void
 queue::
 destroy(void)
 {
-	int ret = tq_destroy( this );
+	enum qterror ret = qtdestroy(this);
 
 	if(ret != 0)
 		unhandled_errno( ret );
@@ -66,10 +72,16 @@ void
 queue::
 start( void )
 {
-	int ret = tq_start( this );
+	int started = 0;
+	enum qterror ret = qtstart(this, &started);
 
-	if( ret != static_cast<int>( max_threads )) {
-		throw_runtime_error( "could not start all threads" );
+	if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 }
 
@@ -77,10 +89,15 @@ void
 queue::
 stop( void )
 {
-	int ret = tq_stop( this );
+	enum qterror ret = qtstop(this, 1);
 
-	if( ret ) {
-		unhandled_errno( ret );
+	if(ret == QTEERRNO) {
+		unhandled_errno(ret);
+	} else if(ret != QTSUCCESS) {
+		char error_string[256];
+
+		qtstrerror_r(ret, error_string, sizeof error_string);
+		throw_runtime_error(error_string);
 	}
 }
 

@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2015 Brandon Yannoni
+ * Copyright 2017 Brandon Yannoni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,186 +18,319 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <assert.h>
 
+#include "function_queue_element.h"
 #include "function_queue.h"
+#include "qterror.h"
 
-static pthread_mutexattr_t attr;
-static pthread_once_t init_attr_control = PTHREAD_ONCE_INIT;
+#include "fq/indexed_array_queue.h"
+#include "fq/linked_list_queue.h"
 
-static struct {
-	int init;
-	int settype;
-} init_attr_ret;
+static void release_mutex(void*);
+static enum qterror peek_or_pop(struct function_queue*,
+		struct function_queue_element*, int, int);
 
+/*
+ * This procedure initializes a function queue based on the given type.
+ * The variable max_elements is the maximum number of elements which can
+ * be stored in the queue. The variable type indicated which dispatch
+ * table to use for internal queue procedures. The procedure returns an
+ * error code to indicate its status. The value of q must not be NULL.
+ */
+enum qterror
+fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
+{
+	enum qterror ret = QTSUCCESS;
+
+	assert(q != NULL);
+	q->size = 0;
+	q->max_elements = max_elements;
+	q->type = type;
+
+	switch(q->type) {
+	case FQTYPE_IA:
+		q->dispatchtable = &fqdispatchtableia;
+		break;
+	case FQTYPE_LL:
+		q->dispatchtable = &fqdispatchtablell;
+		break;
+	case FQTYPE_LAST:
+		return QTEINVALID;
+	}
+
+	if(pthread_mutex_init(&q->lock, NULL) != 0)
+		return QTEPTMINIT;
+
+	if(pthread_cond_init(&q->wait, NULL) != 0) {
+		/* ignore more errors at this point */
+		(void) pthread_mutex_destroy(&q->lock);
+		return QTEPTCINIT;
+	}
+
+	assert(q->dispatchtable != NULL);
+	assert(q->dispatchtable->init != NULL);
+	ret = q->dispatchtable->init(q, max_elements);
+
+	if(ret != QTSUCCESS) {
+		/* ignore more errors at this point */
+		(void) pthread_mutex_destroy(&q->lock);
+		(void) pthread_cond_destroy(&q->wait);
+	}
+
+	return ret;
+}
+
+/*
+ * This procedure destroys the given queue. An attempt to use the object
+ * after destroying it results in undefined behavior. The object can be
+ * reinitialized by fqinit(). This procedure always succeeds. The value
+ * of q must not be NULL.
+ */
+enum qterror
+fqdestroy(struct function_queue* q)
+{
+	assert(q != NULL);
+
+	if(pthread_mutex_destroy(&q->lock) != 0)
+		return QTEPTMDESTROY;
+
+	if(pthread_cond_destroy(&q->wait) != 0)
+		return QTEPTCDESTROY;
+
+	assert(q->dispatchtable != NULL);
+	assert(q->dispatchtable->destroy != NULL);
+	return q->dispatchtable->destroy(q);
+}
+
+/*
+ * This procedure pushes the given function pointer onto the queue. The 
+ * function pointer is stored with the given argument arg so the value
+ * can be passed to it. This procedure may block if the value of block
+ * is non-zero. The procedure returns an error code to indicate its
+ * status. The value of q must not be NULL.
+ */
+enum qterror
+fqpush(struct function_queue* q, void (*func)(void*), void* arg, int block)
+{
+	enum qterror ret = QTSUCCESS;
+	int isfull = 0;
+
+	assert(q != NULL);
+
+	if(block) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
+	} else {
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
+	}
+
+	(void) fqisfull(q, &isfull);
+
+	if(isfull != 0) { /* overflow */
+		ret = QTEFQFULL;
+		goto unlock_queue_mutex;
+	}
+
+	assert(q->dispatchtable != NULL);
+	assert(q->dispatchtable->push != NULL);
+	ret = q->dispatchtable->push(q, func, arg, block);
+
+	if(ret == QTSUCCESS) {
+		++q->size;
+
+		/* Only signal if the queue was empty before */
+		if(q->size == 1)
+			(void) pthread_cond_signal(&q->wait);
+	}
+
+unlock_queue_mutex:
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret != QTSUCCESS)
+			ret = QTEPTMUNLOCK;
+
+	return ret;
+}
+
+/*
+ * This procedure pops a function pointer from the queue. The function
+ * pointer and its information is stored in a function queue element.
+ * The value of this function queue element is copied to the address
+ * pointed to by the variable e and then removed from the queue. This
+ * procedure may block if the value of block is non-zero. The procedure
+ * returns an error code to indicate its status. The value of q must not
+ * be NULL. The value of e must not be NULL.
+ */
+enum qterror
+fqpop(struct function_queue* q, struct function_queue_element* e, int block)
+{
+	assert(q != NULL);
+	assert(e != NULL);
+
+	return peek_or_pop(q, e, block, 1);
+}
+
+/*
+ * This procedure peeks at a function pointer from the queue. The
+ * function pointer and its information is stored in a function queue
+ * element. The value of this function queue element is copied to the
+ * address pointed to by the variable e. This procedure may block if the
+ * value of block is non-zero. The procedure returns an error code to
+ * indicate its status. The value of q must not be NULL. The value of e
+ * must not be NULL.
+ */
+enum qterror
+fqpeek(struct function_queue* q, struct function_queue_element* e, int block)
+{
+	assert(q != NULL);
+	assert(e != NULL);
+
+	return peek_or_pop(q, e, block, 0);
+}
+
+/*
+ * This procedure checks if the given queue is empty. It sets the value
+ * at the address pointed to by isempty to 0 if the queue is empty.
+ * Otherwise, it sets the value pointed to by isempty to non-zero. This
+ * procedure always succeeds. The value of q must not be NULL. The value
+ * of isempty must not be NULL.
+ */
+enum qterror
+fqisempty(struct function_queue* q, int* isempty)
+{
+	assert(q != NULL);
+	assert(isempty != NULL);
+	*isempty = q->size == 0;
+	return QTSUCCESS;
+}
+
+/*
+ * This procedure checks if the given queue is full. It sets the value
+ * at the address pointed to by isfull to 0 if the queue is full.
+ * Otherwise, it sets the value pointed to by isfull to non-zero. This
+ * procedure always succeeds. The value of q must not be NULL. The value
+ * of isfull must not be NULL.
+ */
+enum qterror
+fqisfull(struct function_queue* q, int* isfull)
+{
+	assert(q != NULL);
+	assert(isfull != NULL);
+	*isfull = q->size == q->max_elements;
+	return QTSUCCESS;
+}
+
+enum qterror
+fqresize(struct function_queue* q, unsigned int size, int block)
+{
+	enum qterror ret = QTSUCCESS;
+
+	assert(q != NULL);
+
+	if(block) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
+	} else {
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
+	}
+
+	assert(q->dispatchtable != NULL);
+	assert(q->dispatchtable->resize != NULL);
+	ret = q->dispatchtable->resize(q, size, block);
+
+	if(q->size > size)
+		q->size = size;
+
+	q->max_elements = size;
+
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret != QTSUCCESS)
+			ret = QTEPTMUNLOCK;
+
+	return ret;
+}
+
+/*
+ * This procedure is a wrapper around the mutex unlock procedure so that
+ * the mutex can be unlocked in a cleanup handler. The variable m is a
+ * pointer to the mutex to unlock. The value of m must not be NULL.
+ */
 static void
-init_attr(void)
+release_mutex(void* m)
 {
-	init_attr_ret.init = pthread_mutexattr_init(&attr);
-
-	if(init_attr_ret.init == 0)
-		init_attr_ret.settype = pthread_mutexattr_settype(&attr,
-				PTHREAD_MUTEX_RECURSIVE);
+	(void) pthread_mutex_unlock((pthread_mutex_t*) m);
 }
 
-int
-fq_init(struct function_queue* q, unsigned max_elements)
+/*
+ * This procedure is a helper for peeking and poping a function queue.
+ * The function pointer and its information is stored in a function
+ * queue element. The value of this function queue element is copied to
+ * the address pointed to by the variable e. It is removed from the
+ * queue if the value of do_pop is non-zero. This procedure may block if
+ * the value of block is non-zero. The procedure returns an error code
+ * to indicate its status. The value of q must not be NULL. The value of
+ * e must not be NULL.
+ */
+static enum qterror
+peek_or_pop(struct function_queue* q, struct function_queue_element* e,
+		int block, int do_pop)
 {
-	int ret = pthread_once(&init_attr_control, init_attr);
+	volatile enum qterror ret = QTSUCCESS;
+	int isempty = 0;
 
-	if(ret == 0) {
-		if(init_attr_ret.init != 0 || init_attr_ret.settype != 0) {
-			if(init_attr_ret.init != 0)
-				ret = EMUTEXATTR_INIT;
+	assert(q != NULL);
+	assert(e != NULL);
 
-			if(init_attr_ret.settype != 0)
-				ret = EMUTEXATTR_SETTYPE;
-		} else if((ret = pthread_mutex_init(&q->lock,&attr)) == 0) {
-			q->front = 0;
-			q->back = 0;
-			q->size = 0;
-			q->max_elements = max_elements;
-			q->elements = malloc(q->max_elements *
-					sizeof(struct function_queue_element));
+	if(block) {
+		if(pthread_mutex_lock(&q->lock) != 0)
+			return QTEPTMLOCK;
+	} else {
+		if(pthread_mutex_trylock(&q->lock) != 0)
+			return QTEPTMTRYLOCK;
+	}
 
-			if(q->elements == NULL) {
-				ret = errno;
-				pthread_mutex_destroy(&q->lock);
-			}
+	(void) fqisempty(q, &isempty);
+
+	if(isempty) {
+		if(!block) {
+			ret = QTEFQEMPTY;
+			goto unlock_queue_mutex;
 		}
+
+		pthread_cleanup_push(release_mutex, &q->lock);
+
+		do {
+			pthread_cond_wait(&q->wait, &q->lock);
+			fqisempty(q, &isempty);
+		} while(isempty);
+
+		pthread_cleanup_pop(0);
 	}
 
-	return ret;
-}
+	/*
+	 * NOTE: This cannot be an else because isempty could change if
+	 * we block.
+	 */
+	if(!isempty) {
+		assert(q->dispatchtable != NULL);
+		assert(q->dispatchtable->pop != NULL);
 
-int
-fq_destroy(struct function_queue* q)
-{
-	int ret = pthread_mutex_destroy(&q->lock);
+		if(do_pop) {
+			ret = q->dispatchtable->pop(q, e, block);
 
-	if(ret == 0) {
-		free((struct function_queue_element*) q->elements);
-		q->elements = NULL;
-	}
-
-	return ret;
-}
-
-int
-fq_push(struct function_queue* q, struct function_queue_element e, int block)
-{
-	int ret;
-
-	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
-	else
-		ret = pthread_mutex_trylock(&q->lock);
-
-	if(ret == 0) {
-		if(fq_is_full(q, block) != 0) { /* overflow */
-			ret = ERANGE;
+			if(ret == QTSUCCESS)
+				--q->size;
 		} else {
-			++q->size;
-
-			if(++q->back == q->max_elements)
-				q->back = 0;
-
-			q->elements[q->back] = e;
+			ret = q->dispatchtable->peek(q, e, block);
 		}
-
-		pthread_mutex_unlock(&q->lock);
 	}
 
-	return ret;
-}
-
-int
-fq_pop(struct function_queue* q, struct function_queue_element* e, int block)
-{
-	int ret;
-
-	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
-	else
-		ret = pthread_mutex_trylock(&q->lock);
-
-	if(ret == 0) {
-		if(fq_is_empty(q, block) != 0) { /* underflow */
-			ret = ERANGE;
-		} else {
-			--q->size;
-
-			if(++q->front == q->max_elements)
-				q->front = 0;
-
-			*e = q->elements[q->front];
-		}
-
-		pthread_mutex_unlock(&q->lock);
-	}
-
-	return ret;
-}
-
-int
-fq_peek(struct function_queue* q, struct function_queue_element* e, int block)
-{
-	int ret;
-
-	if(block)
-		ret = pthread_mutex_lock(&q->lock);
-	else
-		ret = pthread_mutex_trylock(&q->lock);
-
-	if(ret == 0) {
-		if(fq_is_empty(q, block)) {
-			ret = ERANGE;
-		} else {
-			unsigned tmp = q->front + 1;
-
-			if(tmp == q->max_elements)
-				tmp = 0;
-
-			*e = q->elements[tmp];
-		}
-
-		pthread_mutex_unlock(&q->lock);
-	}
-
-	return ret;
-}
-
-int
-fq_is_empty(struct function_queue* q, int block)
-{
-	int ret;
-
-	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
-	else
-		ret = pthread_mutex_trylock(&q->lock);
-
-	if(ret == 0) {
-		ret = q->size == 0;
-		pthread_mutex_unlock(&q->lock);
-	}
-
-	return ret;
-}
-
-int
-fq_is_full(struct function_queue* q, int block)
-{
-	int ret;
-
-	if(block != 0)
-		ret = pthread_mutex_lock(&q->lock);
-	else
-		ret = pthread_mutex_trylock(&q->lock);
-
-	if(ret == 0) {
-		ret = q->size == q->max_elements;
-		pthread_mutex_unlock(&q->lock);
-	}
+unlock_queue_mutex:
+	if(pthread_mutex_unlock(&q->lock) != 0)
+		if(ret != QTSUCCESS)
+			ret = QTEPTMUNLOCK;
 
 	return ret;
 }
