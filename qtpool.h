@@ -26,11 +26,10 @@
  * This structure holds the list of errors which occurred durring the
  * thread start up segment of qtstart(). The member errors is a pointer
  * to the first elements of an array of errno values corresponding to
- * the start status of each thread. The member current is unused.
+ * the start status of each thread.
  */
 struct qtstart_errors_info {
 	int* errors;
-	size_t current;
 };
 
 /*
