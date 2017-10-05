@@ -58,12 +58,11 @@ const struct fqdispatchtable fqdispatchtableia = {
 static enum qterror
 fqinitia(struct function_queue* q, unsigned max_elements)
 {
-	/* suppress unused variable warning */
-	(void) max_elements;
-
 	assert(q != NULL);
 	q->queue.ia.front = 0;
 	q->queue.ia.back = 0;
+	q->queue.ia.size = 0;
+	q->queue.ia.max_size = max_elements;
 	q->queue.ia.elements = malloc(q->max_elements *
 			sizeof(*q->queue.ia.elements));
 
@@ -90,7 +89,7 @@ fqdestroyia(struct function_queue* q)
 }
 
 /*
- * This procedure pushes the given function pointer onto the queue. The 
+ * This procedure pushes the given function pointer onto the queue. The
  * function pointer is stored with the given argument arg so the value
  * can be passed to it. This procedure does not block. It returns an
  * error code to indicate its status. The value of q must not be NULL.
@@ -104,12 +103,17 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 	(void) block;
 
 	assert(q != NULL);
+
+	if(q->queue.ia.size > q->queue.ia.max_size)
+		return QTEFQFULL;
+
 	e.func = func;
 	e.arg = arg;
 
 	if(++q->queue.ia.back == q->max_elements)
 		q->queue.ia.back = 0;
 
+	++q->queue.ia.size;
 	q->queue.ia.elements[q->queue.ia.back] = e;
 	return QTSUCCESS;
 }
@@ -132,9 +136,13 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 	assert(q != NULL);
 	assert(e != NULL);
 
+	if(q->queue.ia.size == 0)
+		return QTEFQEMPTY;
+
 	if(++q->queue.ia.front == q->max_elements)
 		q->queue.ia.front = 0;
 
+	--q->queue.ia.size;
 	*e = q->queue.ia.elements[q->queue.ia.front];
 	return QTSUCCESS;
 }

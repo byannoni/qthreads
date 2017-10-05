@@ -63,6 +63,8 @@ fqinitll(struct function_queue* q, unsigned max_elements)
 	assert(q != NULL);
 	q->queue.ll.head = NULL;
 	q->queue.ll.tail = NULL;
+	q->queue.ll.size = 0;
+	q->queue.ll.max_size = max_elements;
 	q->size = 0;
 	q->max_elements = max_elements;
 
@@ -99,6 +101,10 @@ fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
 	(void) block;
 
 	assert(q != NULL);
+
+	if(q->queue.ia.size >= q->queue.ia.max_size)
+		return QTEFQFULL;
+
 	e.func = func;
 	e.arg = arg;
 	new_node = malloc(sizeof(struct fqellnode));
@@ -108,6 +114,7 @@ fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	new_node->element = e;
 	new_node->next = NULL;
+	++q->queue.ia.size;
 
 	if(q->queue.ll.tail == NULL) {
 		q->queue.ll.tail = new_node;
@@ -140,6 +147,11 @@ fqpopll(struct function_queue* q, struct function_queue_element* e, int block)
 
 	assert(q != NULL);
 	assert(e != NULL);
+
+	if(q->queue.ll.size == 0)
+		return QTEFQEMPTY;
+
+	--q->queue.ll.size;
 	*e = q->queue.ll.head->element;
 	tmp = q->queue.ll.head;
 	q->queue.ll.head = q->queue.ll.head->next;
@@ -167,6 +179,10 @@ fqpeekll(struct function_queue* q, struct function_queue_element* e, int block)
 
 	assert(q != NULL);
 	assert(e != NULL);
+
+	if(q->queue.ll.size == 0)
+		return QTEFQEMPTY;
+
 	*e = q->queue.ll.head->element;
 
 	return QTSUCCESS;
@@ -184,15 +200,19 @@ static enum qterror
 fqresizell(struct function_queue* q, unsigned int len, int block)
 {
 	struct fqellnode* tmp = NULL;
+
 	/* suppress unused variable warning */
 	(void) block;
 
 	assert(q != NULL);
 
-	if(len >= q->size)
+	q->queue.ll.max_size = len;
+
+	if(len >= q->queue.ll.size)
 		return QTSUCCESS;
 
 	tmp = q->queue.ll.head;
+	q->queue.ll.size = len;
 
 	while(len-- > 0 && tmp != NULL) {
 		tmp = tmp->next;
@@ -200,8 +220,15 @@ fqresizell(struct function_queue* q, unsigned int len, int block)
 
 	assert(tmp != NULL); /* this should never be possible */
 	fqellnode_trunc(tmp->next);
-	tmp->next = NULL;
-	q->queue.ll.tail = tmp;
+
+	if(q->queue.ll.size > 0) {
+		tmp->next = NULL;
+		q->queue.ll.tail = tmp;
+	} else {
+		q->queue.ll.head = NULL;
+		q->queue.ll.tail = NULL;
+	}
+
 	return QTSUCCESS;
 }
 
