@@ -40,6 +40,8 @@ struct fqellnode {
 struct fqlinkedlist {
 	struct fqellnode* head; /* a pointer to the head of the list */
 	struct fqellnode* tail; /* a pointer to the tail of the list */
+	unsigned int size; /* the current number of elements */
+	unsigned int max_size; /* the maximum number of elements */
 };
 
 extern const struct fqdispatchtable fqdispatchtablell;

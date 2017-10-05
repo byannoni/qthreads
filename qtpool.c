@@ -70,7 +70,6 @@ qtinit(struct qtpool* tq, struct qtpool_startup_info* tqsi)
 	if(tq->threads == NULL)
 		return QTEMALLOC;
 
-	tq->start_errors.current = 0;
 	tq->start_errors.errors = calloc(tq->max_threads, sizeof(int));
 
 	if(tq->start_errors.errors == NULL){
@@ -136,7 +135,7 @@ qtstart(struct qtpool* tq, int* started)
  * threads are joined and the procedure blocks until all the threads
  * have terminated. Otherwise, the threads are detached and the
  * procedure does not block. This procedure always succeeds. The value
- * of tq must not be NULL. 
+ * of tq must not be NULL.
  */
 enum qterror
 qtstop(struct qtpool* tq, int join)

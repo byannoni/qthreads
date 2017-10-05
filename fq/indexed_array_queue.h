@@ -33,6 +33,8 @@ struct fqindexedarray {
 	struct function_queue_element* elements;
 	unsigned int front; /* the index of the "first" element */
 	unsigned int back; /* the index of the "last" element */
+	unsigned int size; /* the number of elements in the queue */
+	unsigned int max_size; /* the maximum number of elements */
 };
 
 extern const struct fqdispatchtable fqdispatchtableia;
