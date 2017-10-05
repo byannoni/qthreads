@@ -35,6 +35,7 @@ static enum qterror fqpopia(struct function_queue*,
 static enum qterror fqpeekia(struct function_queue*,
 		struct function_queue_element*, int);
 static enum qterror fqresizeia(struct function_queue*, unsigned int, int);
+static unsigned int inc_and_wrap_index(unsigned int, unsigned int);
 
 /*
  * This is the function dispatch table for manipulating the queue in an
@@ -109,12 +110,10 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	e.func = func;
 	e.arg = arg;
-
-	if(++q->queue.ia.back == q->max_elements)
-		q->queue.ia.back = 0;
-
-	++q->queue.ia.size;
+	q->queue.ia.back = inc_and_wrap_index(q->queue.ia.back,
+			q->queue.ia.max_size);
 	q->queue.ia.elements[q->queue.ia.back] = e;
+	++q->queue.ia.size;
 	return QTSUCCESS;
 }
 
@@ -139,11 +138,10 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 	if(q->queue.ia.size == 0)
 		return QTEFQEMPTY;
 
-	if(++q->queue.ia.front == q->max_elements)
-		q->queue.ia.front = 0;
-
-	--q->queue.ia.size;
+	q->queue.ia.front = inc_and_wrap_index(q->queue.ia.front,
+			q->queue.ia.max_size);
 	*e = q->queue.ia.elements[q->queue.ia.front];
+	--q->queue.ia.size;
 	return QTSUCCESS;
 }
 
@@ -165,11 +163,7 @@ fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 
 	assert(q != NULL);
 	assert(e != NULL);
-	tmp = q->queue.ia.front + 1;
-
-	if(tmp == q->max_elements)
-		tmp = 0;
-
+	tmp = inc_and_wrap_index(q->queue.ia.front, q->queue.ia.max_size);
 	*e = q->queue.ia.elements[tmp];
 	return QTSUCCESS;
 }
@@ -228,5 +222,21 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 	q->queue.ia.elements = new_array;
 	free(old_array);
 	return QTSUCCESS;
+}
+
+/*
+ * This procedure calculates the index of the the queue which results
+ * from incrementing the given index and wrapping it appropriately with
+ * the given maximum number of elements.  The value of index is the
+ * index given by a position in the queue. The value of max is the value
+ * of the max_elements member of the queue. This procedure returns the
+ * index of the next element insertion point in the queue. The value of
+ * max must be greater than or equal to the value of index.
+ */
+static unsigned int
+inc_and_wrap_index(unsigned int index, unsigned int max)
+{
+	assert(index <= max);
+	return index + 1 >= max ? 0 : index + 1;
 }
 
