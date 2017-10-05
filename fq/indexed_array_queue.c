@@ -163,11 +163,7 @@ fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 
 	assert(q != NULL);
 	assert(e != NULL);
-	tmp = q->queue.ia.front + 1;
-
-	if(tmp == q->max_elements)
-		tmp = 0;
-
+	tmp = inc_and_wrap_index(q->queue.ia.front, q->queue.ia.max_size);
 	*e = q->queue.ia.elements[tmp];
 	return QTSUCCESS;
 }
