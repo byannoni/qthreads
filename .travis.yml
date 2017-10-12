@@ -1,7 +1,7 @@
 language: c
 
 compiler:
-  - gcc
+  - gcc-7
   - clang
 
 env:
@@ -9,8 +9,12 @@ env:
     - DEBUG=0
     - DEBUG=1
 
-before_script:
-  - if [ "$CC" = "gcc" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; sudo apt-get update -qq; sudo apt-get install -qq g++-4.8; export CC="gcc-4.8"; fi
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-7
 
 script:
   - make all
