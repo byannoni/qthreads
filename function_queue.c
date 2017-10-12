@@ -126,7 +126,7 @@ fqpush(struct function_queue* q, void (*func)(void*), void* arg, int block)
 			return QTEPTMTRYLOCK;
 	}
 
-	(void) fqisfull(q, &isfull);
+	fqisfull(q, &isfull, 0);
 
 	if(isfull != 0) { /* overflow */
 		ret = QTEFQFULL;
@@ -193,32 +193,32 @@ fqpeek(struct function_queue* q, struct function_queue_element* e, int block)
  * This procedure checks if the given queue is empty. It sets the value
  * at the address pointed to by isempty to 0 if the queue is empty.
  * Otherwise, it sets the value pointed to by isempty to non-zero. This
- * procedure always succeeds. The value of q must not be NULL. The value
- * of isempty must not be NULL.
+ * procedure returns an error code indicating its status. The value of q
+ * must not be NULL. The value of isempty must not be NULL.
  */
 enum qterror
-fqisempty(struct function_queue* q, int* isempty)
+fqisempty(struct function_queue* q, int* isempty, int block)
 {
 	assert(q != NULL);
+	assert(q->dispatchtable->isempty != NULL);
 	assert(isempty != NULL);
-	*isempty = q->size == 0;
-	return QTSUCCESS;
+	return q->dispatchtable->isempty(q, isempty, block);
 }
 
 /*
  * This procedure checks if the given queue is full. It sets the value
  * at the address pointed to by isfull to 0 if the queue is full.
  * Otherwise, it sets the value pointed to by isfull to non-zero. This
- * procedure always succeeds. The value of q must not be NULL. The value
- * of isfull must not be NULL.
+ * procedure returns an error code indicating its status. The value of q
+ * must not be NULL. The value of isfull must not be NULL.
  */
 enum qterror
-fqisfull(struct function_queue* q, int* isfull)
+fqisfull(struct function_queue* q, int* isfull, int block)
 {
 	assert(q != NULL);
+	assert(q->dispatchtable->isfull != NULL);
 	assert(isfull != NULL);
-	*isfull = q->size == q->max_elements;
-	return QTSUCCESS;
+	return q->dispatchtable->isfull(q, isfull, block);
 }
 
 enum qterror
@@ -291,7 +291,10 @@ peek_or_pop(struct function_queue* q, struct function_queue_element* e,
 			return QTEPTMTRYLOCK;
 	}
 
-	(void) fqisempty(q, &isempty);
+	ret = fqisempty(q, &isempty, 0) != QTSUCCESS;
+
+	if(ret != QTSUCCESS)
+		goto unlock_queue_mutex;
 
 	if(isempty) {
 		if(!block) {
@@ -303,7 +306,10 @@ peek_or_pop(struct function_queue* q, struct function_queue_element* e,
 
 		do {
 			pthread_cond_wait(&q->wait, &q->lock);
-			fqisempty(q, &isempty);
+			ret = fqisempty(q, &isempty, 0);
+
+			if(ret != QTSUCCESS)
+				goto unlock_queue_mutex;
 		} while(isempty);
 
 		pthread_cleanup_pop(0);

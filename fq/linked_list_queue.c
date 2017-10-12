@@ -34,6 +34,8 @@ static enum qterror fqpopll(struct function_queue*,
 static enum qterror fqpeekll(struct function_queue*,
 		struct function_queue_element*, int);
 static enum qterror fqresizell(struct function_queue*, unsigned, int);
+static enum qterror fqisemptyll(struct function_queue*, int*, int);
+static enum qterror fqisfullll(struct function_queue*, int*, int);
 
 static void fqellnode_trunc(struct fqellnode*);
 /*
@@ -47,6 +49,8 @@ const struct fqdispatchtable fqdispatchtablell = {
 	fqpopll,
 	fqpeekll,
 	fqresizell,
+	fqisemptyll,
+	fqisfullll,
 };
 
 /*
@@ -229,6 +233,42 @@ fqresizell(struct function_queue* q, unsigned int len, int block)
 		q->queue.ll.tail = NULL;
 	}
 
+	return QTSUCCESS;
+}
+
+/*
+ * This procedure checks if the given queue is empty. It sets the value
+ * at the address pointed to by isempty to 0 if the queue is empty.
+ * Otherwise, it sets the value pointed to by isempty to non-zero. This
+ * procedure returns an error code indicating its status. The value of q
+ * must not be NULL. The value of isempty must not be NULL.
+ */
+static enum qterror
+fqisemptyll(struct function_queue* q, int* isempty, int block)
+{
+	(void) block;
+
+	assert(q != NULL);
+	assert(isempty != NULL);
+	*isempty = q->queue.ll.size == 0;
+	return QTSUCCESS;
+}
+
+/*
+ * This procedure checks if the given queue is full. It sets the value
+ * at the address pointed to by isfull to 0 if the queue is full.
+ * Otherwise, it sets the value pointed to by isfull to non-zero. This
+ * procedure returns an error code indicating its status. The value of q
+ * must not be NULL. The value of isfull must not be NULL.
+ */
+static enum qterror
+fqisfullll(struct function_queue* q, int* isfull, int block)
+{
+	(void) block;
+
+	assert(q != NULL);
+	assert(isfull != NULL);
+	*isfull = q->queue.ll.size >= q->queue.ll.max_size;
 	return QTSUCCESS;
 }
 
