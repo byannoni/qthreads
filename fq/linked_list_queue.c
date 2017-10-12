@@ -65,8 +65,6 @@ fqinitll(struct function_queue* q, unsigned max_elements)
 	q->queue.ll.tail = NULL;
 	q->queue.ll.size = 0;
 	q->queue.ll.max_size = max_elements;
-	q->size = 0;
-	q->max_elements = max_elements;
 
 	return QTSUCCESS;
 }

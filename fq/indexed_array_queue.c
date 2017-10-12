@@ -64,7 +64,7 @@ fqinitia(struct function_queue* q, unsigned max_elements)
 	q->queue.ia.back = 0;
 	q->queue.ia.size = 0;
 	q->queue.ia.max_size = max_elements;
-	q->queue.ia.elements = malloc(q->max_elements *
+	q->queue.ia.elements = malloc(q->queue.ia.max_size *
 			sizeof(*q->queue.ia.elements));
 
 	if(q->queue.ia.elements == NULL)
@@ -188,7 +188,7 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 
 	assert(q != NULL);
 
-	if(len == q->size)
+	if(len == q->queue.ia.size)
 		return QTSUCCESS;
 
 	new_array = malloc(len * sizeof(*new_array));
@@ -198,7 +198,7 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 
 	real_front = q->queue.ia.front + 1;
 
-	if(real_front == q->max_elements)
+	if(real_front == q->queue.ia.max_size)
 		real_front = 0;
 
 	if(q->queue.ia.back >= q->queue.ia.front) {
