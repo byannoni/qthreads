@@ -24,3 +24,5 @@ branches:
   except:
     - /^\d+-/
 
+git:
+  depth: 2
