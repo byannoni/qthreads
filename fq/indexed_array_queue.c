@@ -220,10 +220,14 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 				num_elements_to_copy2 * sizeof(*new_array));
 	}
 
+	if(q->queue.ia.size > len)
+		q->queue.ia.size = len;
+
 	q->queue.ia.front = len > 0 ? len - 1 : 0;
 	q->queue.ia.back = len > 0 ? len - 1 : 0;
 	old_array = q->queue.ia.elements;
 	q->queue.ia.elements = new_array;
+	q->queue.ia.max_size = len;
 	free(old_array);
 	return QTSUCCESS;
 }

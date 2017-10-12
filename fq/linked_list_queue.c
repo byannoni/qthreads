@@ -106,7 +106,7 @@ fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	assert(q != NULL);
 
-	if(q->queue.ia.size >= q->queue.ia.max_size)
+	if(q->queue.ll.size >= q->queue.ll.max_size)
 		return QTEFQFULL;
 
 	e.func = func;
@@ -118,7 +118,7 @@ fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	new_node->element = e;
 	new_node->next = NULL;
-	++q->queue.ia.size;
+	++q->queue.ll.size;
 
 	if(q->queue.ll.tail == NULL) {
 		q->queue.ll.tail = new_node;
