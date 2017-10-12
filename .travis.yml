@@ -21,8 +21,8 @@ script:
   - make test
 
 branches:
-  except:
-    - /^\d+-/
+  only:
+    - /./
 
 git:
   depth: 2
