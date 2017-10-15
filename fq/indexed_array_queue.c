@@ -35,6 +35,8 @@ static enum qterror fqpopia(struct function_queue*,
 static enum qterror fqpeekia(struct function_queue*,
 		struct function_queue_element*, int);
 static enum qterror fqresizeia(struct function_queue*, unsigned int, int);
+static enum qterror fqisemptyia(struct function_queue*, int*, int);
+static enum qterror fqisfullia(struct function_queue*, int*, int);
 static unsigned int inc_and_wrap_index(unsigned int, unsigned int);
 
 /*
@@ -48,6 +50,8 @@ const struct fqdispatchtable fqdispatchtableia = {
 	fqpopia,
 	fqpeekia,
 	fqresizeia,
+	fqisemptyia,
+	fqisfullia,
 };
 
 /*
@@ -216,11 +220,50 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 				num_elements_to_copy2 * sizeof(*new_array));
 	}
 
+	if(q->queue.ia.size > len)
+		q->queue.ia.size = len;
+
 	q->queue.ia.front = len > 0 ? len - 1 : 0;
 	q->queue.ia.back = len > 0 ? len - 1 : 0;
 	old_array = q->queue.ia.elements;
 	q->queue.ia.elements = new_array;
+	q->queue.ia.max_size = len;
 	free(old_array);
+	return QTSUCCESS;
+}
+
+/*
+ * This procedure checks if the given queue is empty. It sets the value
+ * at the address pointed to by isempty to 0 if the queue is empty.
+ * Otherwise, it sets the value pointed to by isempty to non-zero. This
+ * procedure returns an error code indicating its status. The value of q
+ * must not be NULL. The value of isempty must not be NULL.
+ */
+static enum qterror fqisemptyia(struct function_queue* q, int* isempty,
+		int block)
+{
+	(void) block;
+
+	assert(q != NULL);
+	assert(isempty != NULL);
+	*isempty = q->queue.ia.size == 0;
+	return QTSUCCESS;
+}
+
+/*
+ * This procedure checks if the given queue is full. It sets the value
+ * at the address pointed to by isfull to 0 if the queue is full.
+ * Otherwise, it sets the value pointed to by isfull to non-zero. This
+ * procedure returns an error code indicating its status. The value of q
+ * must not be NULL. The value of isfull must not be NULL.
+ */
+static enum qterror fqisfullia(struct function_queue* q, int* isfull, int block)
+{
+	(void) block;
+
+	assert(q != NULL);
+	assert(isfull != NULL);
+	*isfull = q->queue.ia.size >= q->queue.ia.max_size;
 	return QTSUCCESS;
 }
 
