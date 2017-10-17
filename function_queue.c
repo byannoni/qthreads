@@ -291,7 +291,7 @@ peek_or_pop(struct function_queue* q, struct function_queue_element* e,
 			return QTEPTMTRYLOCK;
 	}
 
-	ret = fqisempty(q, &isempty, 0) != QTSUCCESS;
+	ret = fqisempty(q, &isempty, 0);
 
 	if(ret != QTSUCCESS)
 		goto unlock_queue_mutex;
@@ -321,14 +321,15 @@ peek_or_pop(struct function_queue* q, struct function_queue_element* e,
 	 */
 	if(!isempty) {
 		assert(q->dispatchtable != NULL);
-		assert(q->dispatchtable->pop != NULL);
 
 		if(do_pop) {
+			assert(q->dispatchtable->pop != NULL);
 			ret = q->dispatchtable->pop(q, e, block);
 
 			if(ret == QTSUCCESS)
 				--q->size;
 		} else {
+			assert(q->dispatchtable->peek != NULL);
 			ret = q->dispatchtable->peek(q, e, block);
 		}
 	}
