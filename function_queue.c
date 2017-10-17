@@ -70,7 +70,7 @@ fqinit(struct function_queue* q, enum fqtype type, unsigned max_elements)
 
 	assert(q->dispatchtable != NULL);
 	assert(q->dispatchtable->init != NULL);
-	ret = q->dispatchtable->init(q, max_elements);
+	ret = q->dispatchtable->init(&q->queue, max_elements);
 
 	if(ret != QTSUCCESS) {
 		/* ignore more errors at this point */
@@ -100,7 +100,7 @@ fqdestroy(struct function_queue* q)
 
 	assert(q->dispatchtable != NULL);
 	assert(q->dispatchtable->destroy != NULL);
-	return q->dispatchtable->destroy(q);
+	return q->dispatchtable->destroy(&q->queue);
 }
 
 /*
@@ -135,7 +135,7 @@ fqpush(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	assert(q->dispatchtable != NULL);
 	assert(q->dispatchtable->push != NULL);
-	ret = q->dispatchtable->push(q, func, arg, block);
+	ret = q->dispatchtable->push(&q->queue, func, arg, block);
 
 	if(ret == QTSUCCESS) {
 		++q->size;
@@ -202,7 +202,7 @@ fqisempty(struct function_queue* q, int* isempty, int block)
 	assert(q != NULL);
 	assert(q->dispatchtable->isempty != NULL);
 	assert(isempty != NULL);
-	return q->dispatchtable->isempty(q, isempty, block);
+	return q->dispatchtable->isempty(&q->queue, isempty, block);
 }
 
 /*
@@ -218,7 +218,7 @@ fqisfull(struct function_queue* q, int* isfull, int block)
 	assert(q != NULL);
 	assert(q->dispatchtable->isfull != NULL);
 	assert(isfull != NULL);
-	return q->dispatchtable->isfull(q, isfull, block);
+	return q->dispatchtable->isfull(&q->queue, isfull, block);
 }
 
 enum qterror
@@ -238,7 +238,7 @@ fqresize(struct function_queue* q, unsigned int size, int block)
 
 	assert(q->dispatchtable != NULL);
 	assert(q->dispatchtable->resize != NULL);
-	ret = q->dispatchtable->resize(q, size, block);
+	ret = q->dispatchtable->resize(&q->queue, size, block);
 
 	if(q->size > size)
 		q->size = size;
@@ -324,13 +324,13 @@ peek_or_pop(struct function_queue* q, struct function_queue_element* e,
 
 		if(do_pop) {
 			assert(q->dispatchtable->pop != NULL);
-			ret = q->dispatchtable->pop(q, e, block);
+			ret = q->dispatchtable->pop(&q->queue, e, block);
 
 			if(ret == QTSUCCESS)
 				--q->size;
 		} else {
 			assert(q->dispatchtable->peek != NULL);
-			ret = q->dispatchtable->peek(q, e, block);
+			ret = q->dispatchtable->peek(&q->queue, e, block);
 		}
 	}
 
