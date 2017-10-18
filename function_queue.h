@@ -38,6 +38,7 @@ enum fqtype {
 };
 
 struct function_queue;
+union fqvariant;
 
 /*
  * This structure holds a dispatch table of procedures which correspond
@@ -49,24 +50,25 @@ struct function_queue;
  * any member of the function queue object except the member queue.
  */
 struct fqdispatchtable {
-	enum qterror (* init)(struct function_queue*, unsigned);
-	enum qterror (* destroy)(struct function_queue*);
-	enum qterror (* push)(struct function_queue*, void (*)(void*),
-			void*, int);
-	enum qterror (* pop)(struct function_queue*,
+	enum qterror (* init)(union fqvariant*, unsigned);
+	enum qterror (* destroy)(union fqvariant*);
+	enum qterror (* push)(union fqvariant*, void (*)(void*), void*, int);
+	enum qterror (* pop)(union fqvariant*,
 			struct function_queue_element*, int);
-	enum qterror (* peek)(struct function_queue*,
+	enum qterror (* peek)(union fqvariant*,
 			struct function_queue_element*, int);
-	enum qterror (* resize)(struct function_queue*, unsigned int, int);
-	enum qterror (* isempty)(struct function_queue*, int*, int);
-	enum qterror (* isfull)(struct function_queue*, int*, int);
+	enum qterror (* resize)(union fqvariant*, unsigned int, int);
+	enum qterror (* isempty)(union fqvariant*, int*, int);
+	enum qterror (* isfull)(union fqvariant*, int*, int);
+};
+
+union fqvariant { /* union types of queue data */
+	struct fqindexedarray ia; /* indexed array queue */
+	struct fqlinkedlist ll; /* indexed array queue */
 };
 
 struct function_queue {
-	union fqvariant { /* union types of queue data */
-		struct fqindexedarray ia; /* indexed array queue */
-		struct fqlinkedlist ll; /* indexed array queue */
-	} queue;
+	union fqvariant queue; /* "private" data for function queues */
 	/* table of procedures for manipulating the queue data */
 	const struct fqdispatchtable* dispatchtable;
 	/* lock for managing the thread safety of the queue data */
@@ -85,10 +87,8 @@ extern "C" {
 enum qterror fqinit(struct function_queue*, enum fqtype, unsigned);
 enum qterror fqdestroy(struct function_queue*);
 enum qterror fqpush(struct function_queue*, void (*)(void*), void*, int);
-enum qterror fqpop(struct function_queue*, struct function_queue_element*,
-		int);
-enum qterror fqpeek(struct function_queue*, struct function_queue_element*,
-		int);
+enum qterror fqpop(struct function_queue*, struct function_queue_element*, int);
+enum qterror fqpeek(struct function_queue*, struct function_queue_element*, int);
 enum qterror fqisempty(struct function_queue*, int*, int);
 enum qterror fqisfull(struct function_queue*, int*, int);
 enum qterror fqresize(struct function_queue*, unsigned int, int);

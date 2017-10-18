@@ -26,17 +26,16 @@
 #include "indexed_array_queue.h"
 #include "../qterror.h"
 
-static enum qterror fqinitia(struct function_queue*, unsigned);
-static enum qterror fqdestroyia(struct function_queue*);
-static enum qterror fqpushia(struct function_queue*, void (*)(void*), void*,
+static enum qterror fqinitia(union fqvariant*, unsigned);
+static enum qterror fqdestroyia(union fqvariant*);
+static enum qterror fqpushia(union fqvariant*, void (*)(void*), void*, int);
+static enum qterror fqpopia(union fqvariant*, struct function_queue_element*,
 		int);
-static enum qterror fqpopia(struct function_queue*,
-		struct function_queue_element*, int);
-static enum qterror fqpeekia(struct function_queue*,
-		struct function_queue_element*, int);
-static enum qterror fqresizeia(struct function_queue*, unsigned int, int);
-static enum qterror fqisemptyia(struct function_queue*, int*, int);
-static enum qterror fqisfullia(struct function_queue*, int*, int);
+static enum qterror fqpeekia(union fqvariant*, struct function_queue_element*,
+		int);
+static enum qterror fqresizeia(union fqvariant*, unsigned int, int);
+static enum qterror fqisemptyia(union fqvariant*, int*, int);
+static enum qterror fqisfullia(union fqvariant*, int*, int);
 static unsigned int inc_and_wrap_index(unsigned int, unsigned int);
 
 /*
@@ -61,17 +60,17 @@ const struct fqdispatchtable fqdispatchtableia = {
  * error code indicating its status. The value of q must not be NULL.
  */
 static enum qterror
-fqinitia(struct function_queue* q, unsigned max_elements)
+fqinitia(union fqvariant* q, unsigned max_elements)
 {
 	assert(q != NULL);
-	q->queue.ia.front = 0;
-	q->queue.ia.back = 0;
-	q->queue.ia.size = 0;
-	q->queue.ia.max_size = max_elements;
-	q->queue.ia.elements = malloc(q->queue.ia.max_size *
-			sizeof(*q->queue.ia.elements));
+	q->ia.front = 0;
+	q->ia.back = 0;
+	q->ia.size = 0;
+	q->ia.max_size = max_elements;
+	q->ia.elements = malloc(q->ia.max_size *
+			sizeof(*q->ia.elements));
 
-	if(q->queue.ia.elements == NULL)
+	if(q->ia.elements == NULL)
 		return QTEMALLOC;
 
 	return QTSUCCESS;
@@ -84,11 +83,11 @@ fqinitia(struct function_queue* q, unsigned max_elements)
  * error code indicating its status. The value of q must not be NULL.
  */
 static enum qterror
-fqdestroyia(struct function_queue* q)
+fqdestroyia(union fqvariant* q)
 {
 	assert(q != NULL);
-	free((struct function_queue_element*) q->queue.ia.elements);
-	q->queue.ia.elements = NULL;
+	free((struct function_queue_element*) q->ia.elements);
+	q->ia.elements = NULL;
 
 	return QTSUCCESS;
 }
@@ -100,7 +99,7 @@ fqdestroyia(struct function_queue* q)
  * error code to indicate its status. The value of q must not be NULL.
  */
 static enum qterror
-fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
+fqpushia(union fqvariant* q, void (*func)(void*), void* arg, int block)
 {
 	struct function_queue_element e;
 
@@ -109,15 +108,15 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	assert(q != NULL);
 
-	if(q->queue.ia.size > q->queue.ia.max_size)
+	if(q->ia.size > q->ia.max_size)
 		return QTEFQFULL;
 
 	e.func = func;
 	e.arg = arg;
-	q->queue.ia.back = inc_and_wrap_index(q->queue.ia.back,
-			q->queue.ia.max_size);
-	q->queue.ia.elements[q->queue.ia.back] = e;
-	++q->queue.ia.size;
+	q->ia.back = inc_and_wrap_index(q->ia.back,
+			q->ia.max_size);
+	q->ia.elements[q->ia.back] = e;
+	++q->ia.size;
 	return QTSUCCESS;
 }
 
@@ -131,7 +130,7 @@ fqpushia(struct function_queue* q, void (*func)(void*), void* arg, int block)
  * NULL.
  */
 static enum qterror
-fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
+fqpopia(union fqvariant* q, struct function_queue_element* e, int block)
 {
 	/* suppress unused variable warning */
 	(void) block;
@@ -139,13 +138,13 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
 	assert(q != NULL);
 	assert(e != NULL);
 
-	if(q->queue.ia.size == 0)
+	if(q->ia.size == 0)
 		return QTEFQEMPTY;
 
-	q->queue.ia.front = inc_and_wrap_index(q->queue.ia.front,
-			q->queue.ia.max_size);
-	*e = q->queue.ia.elements[q->queue.ia.front];
-	--q->queue.ia.size;
+	q->ia.front = inc_and_wrap_index(q->ia.front,
+			q->ia.max_size);
+	*e = q->ia.elements[q->ia.front];
+	--q->ia.size;
 	return QTSUCCESS;
 }
 
@@ -158,7 +157,7 @@ fqpopia(struct function_queue* q, struct function_queue_element* e, int block)
  * of q must not be NULL. The value of e must not be NULL.
  */
 static enum qterror
-fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
+fqpeekia(union fqvariant* q, struct function_queue_element* e, int block)
 {
 	unsigned int tmp = 0;
 
@@ -167,8 +166,8 @@ fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
 
 	assert(q != NULL);
 	assert(e != NULL);
-	tmp = inc_and_wrap_index(q->queue.ia.front, q->queue.ia.max_size);
-	*e = q->queue.ia.elements[tmp];
+	tmp = inc_and_wrap_index(q->ia.front, q->ia.max_size);
+	*e = q->ia.elements[tmp];
 	return QTSUCCESS;
 }
 
@@ -181,7 +180,7 @@ fqpeekia(struct function_queue* q, struct function_queue_element* e, int block)
  * code indicating its status. The value of q must not be NULL.
  */
 static enum qterror
-fqresizeia(struct function_queue* q, unsigned int len, int block)
+fqresizeia(union fqvariant* q, unsigned int len, int block)
 {
 	struct function_queue_element* new_array = NULL;
 	struct function_queue_element* old_array = NULL;
@@ -192,7 +191,7 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 
 	assert(q != NULL);
 
-	if(len == q->queue.ia.size)
+	if(len == q->ia.size)
 		return QTSUCCESS;
 
 	new_array = malloc(len * sizeof(*new_array));
@@ -200,32 +199,31 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 	if(new_array == NULL)
 		return QTEMALLOC;
 
-	real_front = inc_and_wrap_index(q->queue.ia.front,
-			q->queue.ia.max_size);
+	real_front = inc_and_wrap_index(q->ia.front, q->ia.max_size);
 
-	if(q->queue.ia.back >= q->queue.ia.front) {
-		memcpy(new_array, &q->queue.ia.elements[real_front],
+	if(q->ia.back >= q->ia.front) {
+		memcpy(new_array, &q->ia.elements[real_front],
 				len * sizeof(*new_array));
-	} else if(q->queue.ia.back < q->queue.ia.front) {
+	} else if(q->ia.back < q->ia.front) {
 		size_t num_elements_to_copy1 =
-				len - q->queue.ia.front;
+				len - q->ia.front;
 		size_t num_elements_to_copy2 = len - num_elements_to_copy1;
 
-		memcpy(new_array, &q->queue.ia.elements[real_front],
+		memcpy(new_array, &q->ia.elements[real_front],
 				num_elements_to_copy1 * sizeof(*new_array));
 		memcpy(&new_array[num_elements_to_copy1 + 1],
-				q->queue.ia.elements,
+				q->ia.elements,
 				num_elements_to_copy2 * sizeof(*new_array));
 	}
 
-	if(q->queue.ia.size > len)
-		q->queue.ia.size = len;
+	if(q->ia.size > len)
+		q->ia.size = len;
 
-	q->queue.ia.front = len > 0 ? len - 1 : 0;
-	q->queue.ia.back = len > 0 ? len - 1 : 0;
-	old_array = q->queue.ia.elements;
-	q->queue.ia.elements = new_array;
-	q->queue.ia.max_size = len;
+	q->ia.front = len > 0 ? len - 1 : 0;
+	q->ia.back = len > 0 ? len - 1 : 0;
+	old_array = q->ia.elements;
+	q->ia.elements = new_array;
+	q->ia.max_size = len;
 	free(old_array);
 	return QTSUCCESS;
 }
@@ -237,14 +235,13 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
  * procedure returns an error code indicating its status. The value of q
  * must not be NULL. The value of isempty must not be NULL.
  */
-static enum qterror fqisemptyia(struct function_queue* q, int* isempty,
-		int block)
+static enum qterror fqisemptyia(union fqvariant* q, int* isempty, int block)
 {
 	(void) block;
 
 	assert(q != NULL);
 	assert(isempty != NULL);
-	*isempty = q->queue.ia.size == 0;
+	*isempty = q->ia.size == 0;
 	return QTSUCCESS;
 }
 
@@ -255,13 +252,13 @@ static enum qterror fqisemptyia(struct function_queue* q, int* isempty,
  * procedure returns an error code indicating its status. The value of q
  * must not be NULL. The value of isfull must not be NULL.
  */
-static enum qterror fqisfullia(struct function_queue* q, int* isfull, int block)
+static enum qterror fqisfullia(union fqvariant* q, int* isfull, int block)
 {
 	(void) block;
 
 	assert(q != NULL);
 	assert(isfull != NULL);
-	*isfull = q->queue.ia.size >= q->queue.ia.max_size;
+	*isfull = q->ia.size >= q->ia.max_size;
 	return QTSUCCESS;
 }
 

@@ -25,17 +25,16 @@
 #include "linked_list_queue.h"
 #include "../qterror.h"
 
-static enum qterror fqinitll(struct function_queue*, unsigned);
-static enum qterror fqdestroyll(struct function_queue*);
-static enum qterror fqpushll(struct function_queue*, void (*)(void*), void*,
+static enum qterror fqinitll(union fqvariant*, unsigned);
+static enum qterror fqdestroyll(union fqvariant*);
+static enum qterror fqpushll(union fqvariant*, void (*)(void*), void*, int);
+static enum qterror fqpopll(union fqvariant*, struct function_queue_element*,
 		int);
-static enum qterror fqpopll(struct function_queue*,
-		struct function_queue_element*, int);
-static enum qterror fqpeekll(struct function_queue*,
-		struct function_queue_element*, int);
-static enum qterror fqresizell(struct function_queue*, unsigned, int);
-static enum qterror fqisemptyll(struct function_queue*, int*, int);
-static enum qterror fqisfullll(struct function_queue*, int*, int);
+static enum qterror fqpeekll(union fqvariant*, struct function_queue_element*,
+		int);
+static enum qterror fqresizell(union fqvariant*, unsigned, int);
+static enum qterror fqisemptyll(union fqvariant*, int*, int);
+static enum qterror fqisfullll(union fqvariant*, int*, int);
 
 static void fqellnode_trunc(struct fqellnode*);
 /*
@@ -59,16 +58,16 @@ const struct fqdispatchtable fqdispatchtablell = {
  * procedure always succeeds. The value of q must not be NULL.
  */
 static enum qterror
-fqinitll(struct function_queue* q, unsigned max_elements)
+fqinitll(union fqvariant* q, unsigned max_elements)
 {
 	/* suppress unused variable warning */
 	(void) max_elements;
 
 	assert(q != NULL);
-	q->queue.ll.head = NULL;
-	q->queue.ll.tail = NULL;
-	q->queue.ll.size = 0;
-	q->queue.ll.max_size = max_elements;
+	q->ll.head = NULL;
+	q->ll.tail = NULL;
+	q->ll.size = 0;
+	q->ll.max_size = max_elements;
 
 	return QTSUCCESS;
 }
@@ -80,10 +79,10 @@ fqinitll(struct function_queue* q, unsigned max_elements)
  * succeeds. The value of q must not be NULL.
  */
 static enum qterror
-fqdestroyll(struct function_queue* q)
+fqdestroyll(union fqvariant* q)
 {
 	assert(q != NULL);
-	fqellnode_trunc(q->queue.ll.head);
+	fqellnode_trunc(q->ll.head);
 	return QTSUCCESS;
 }
 
@@ -94,7 +93,7 @@ fqdestroyll(struct function_queue* q)
  * error code to indicate its status. The value of q must not be NULL.
  */
 static enum qterror
-fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
+fqpushll(union fqvariant* q, void (*func)(void*), void* arg, int block)
 {
 	struct function_queue_element e;
 	struct fqellnode* new_node = NULL;
@@ -104,7 +103,7 @@ fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	assert(q != NULL);
 
-	if(q->queue.ll.size >= q->queue.ll.max_size)
+	if(q->ll.size >= q->ll.max_size)
 		return QTEFQFULL;
 
 	e.func = func;
@@ -116,17 +115,17 @@ fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
 
 	new_node->element = e;
 	new_node->next = NULL;
-	++q->queue.ll.size;
+	++q->ll.size;
 
-	if(q->queue.ll.tail == NULL) {
-		q->queue.ll.tail = new_node;
+	if(q->ll.tail == NULL) {
+		q->ll.tail = new_node;
 	} else {
-		q->queue.ll.tail->next = new_node;
-		q->queue.ll.tail = q->queue.ll.tail->next;
+		q->ll.tail->next = new_node;
+		q->ll.tail = q->ll.tail->next;
 	}
 
-	if(q->queue.ll.head == NULL)
-		q->queue.ll.head = q->queue.ll.tail;
+	if(q->ll.head == NULL)
+		q->ll.head = q->ll.tail;
 
 	return QTSUCCESS;
 }
@@ -140,7 +139,7 @@ fqpushll(struct function_queue* q, void (*func)(void*), void* arg, int block)
  * of q must not be NULL. The value of e must not be NULL.
  */
 static enum qterror
-fqpopll(struct function_queue* q, struct function_queue_element* e, int block)
+fqpopll(union fqvariant* q, struct function_queue_element* e, int block)
 {
 	struct fqellnode* tmp = NULL;
 
@@ -150,17 +149,17 @@ fqpopll(struct function_queue* q, struct function_queue_element* e, int block)
 	assert(q != NULL);
 	assert(e != NULL);
 
-	if(q->queue.ll.size == 0)
+	if(q->ll.size == 0)
 		return QTEFQEMPTY;
 
-	--q->queue.ll.size;
-	*e = q->queue.ll.head->element;
-	tmp = q->queue.ll.head;
-	q->queue.ll.head = q->queue.ll.head->next;
+	--q->ll.size;
+	*e = q->ll.head->element;
+	tmp = q->ll.head;
+	q->ll.head = q->ll.head->next;
 	free(tmp);
 
-	if(q->queue.ll.head == NULL)
-		q->queue.ll.tail = NULL;
+	if(q->ll.head == NULL)
+		q->ll.tail = NULL;
 
 	return QTSUCCESS;
 }
@@ -174,7 +173,7 @@ fqpopll(struct function_queue* q, struct function_queue_element* e, int block)
  * value of e must not be NULL.
  */
 static enum qterror
-fqpeekll(struct function_queue* q, struct function_queue_element* e, int block)
+fqpeekll(union fqvariant* q, struct function_queue_element* e, int block)
 {
 	/* suppress unused variable warning */
 	(void) block;
@@ -182,10 +181,10 @@ fqpeekll(struct function_queue* q, struct function_queue_element* e, int block)
 	assert(q != NULL);
 	assert(e != NULL);
 
-	if(q->queue.ll.size == 0)
+	if(q->ll.size == 0)
 		return QTEFQEMPTY;
 
-	*e = q->queue.ll.head->element;
+	*e = q->ll.head->element;
 
 	return QTSUCCESS;
 }
@@ -199,7 +198,7 @@ fqpeekll(struct function_queue* q, struct function_queue_element* e, int block)
  * code indicating its status. The value of q must not be NULL.
  */
 static enum qterror
-fqresizell(struct function_queue* q, unsigned int len, int block)
+fqresizell(union fqvariant* q, unsigned int len, int block)
 {
 	struct fqellnode* tmp = NULL;
 
@@ -208,13 +207,13 @@ fqresizell(struct function_queue* q, unsigned int len, int block)
 
 	assert(q != NULL);
 
-	q->queue.ll.max_size = len;
+	q->ll.max_size = len;
 
-	if(len >= q->queue.ll.size)
+	if(len >= q->ll.size)
 		return QTSUCCESS;
 
-	tmp = q->queue.ll.head;
-	q->queue.ll.size = len;
+	tmp = q->ll.head;
+	q->ll.size = len;
 
 	while(len-- > 0 && tmp != NULL) {
 		tmp = tmp->next;
@@ -223,12 +222,12 @@ fqresizell(struct function_queue* q, unsigned int len, int block)
 	assert(tmp != NULL); /* this should never be possible */
 	fqellnode_trunc(tmp->next);
 
-	if(q->queue.ll.size > 0) {
+	if(q->ll.size > 0) {
 		tmp->next = NULL;
-		q->queue.ll.tail = tmp;
+		q->ll.tail = tmp;
 	} else {
-		q->queue.ll.head = NULL;
-		q->queue.ll.tail = NULL;
+		q->ll.head = NULL;
+		q->ll.tail = NULL;
 	}
 
 	return QTSUCCESS;
@@ -242,13 +241,13 @@ fqresizell(struct function_queue* q, unsigned int len, int block)
  * must not be NULL. The value of isempty must not be NULL.
  */
 static enum qterror
-fqisemptyll(struct function_queue* q, int* isempty, int block)
+fqisemptyll(union fqvariant* q, int* isempty, int block)
 {
 	(void) block;
 
 	assert(q != NULL);
 	assert(isempty != NULL);
-	*isempty = q->queue.ll.size == 0;
+	*isempty = q->ll.size == 0;
 	return QTSUCCESS;
 }
 
@@ -260,13 +259,13 @@ fqisemptyll(struct function_queue* q, int* isempty, int block)
  * must not be NULL. The value of isfull must not be NULL.
  */
 static enum qterror
-fqisfullll(struct function_queue* q, int* isfull, int block)
+fqisfullll(union fqvariant* q, int* isfull, int block)
 {
 	(void) block;
 
 	assert(q != NULL);
 	assert(isfull != NULL);
-	*isfull = q->queue.ll.size >= q->queue.ll.max_size;
+	*isfull = q->ll.size >= q->ll.max_size;
 	return QTSUCCESS;
 }
 
