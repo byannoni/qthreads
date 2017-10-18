@@ -199,10 +199,7 @@ fqresizeia(union fqvariant* q, unsigned int len, int block)
 	if(new_array == NULL)
 		return QTEMALLOC;
 
-	real_front = q->ia.front + 1;
-
-	if(real_front == q->ia.max_size)
-		real_front = 0;
+	real_front = inc_and_wrap_index(q->ia.front, q->ia.max_size);
 
 	if(q->ia.back >= q->ia.front) {
 		memcpy(new_array, &q->ia.elements[real_front],
