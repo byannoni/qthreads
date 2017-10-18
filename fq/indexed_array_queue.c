@@ -200,10 +200,8 @@ fqresizeia(struct function_queue* q, unsigned int len, int block)
 	if(new_array == NULL)
 		return QTEMALLOC;
 
-	real_front = q->queue.ia.front + 1;
-
-	if(real_front == q->queue.ia.max_size)
-		real_front = 0;
+	real_front = inc_and_wrap_index(q->queue.ia.front,
+			q->queue.ia.max_size);
 
 	if(q->queue.ia.back >= q->queue.ia.front) {
 		memcpy(new_array, &q->queue.ia.elements[real_front],
